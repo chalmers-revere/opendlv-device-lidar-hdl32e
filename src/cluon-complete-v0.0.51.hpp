@@ -1,6 +1,6 @@
 // This is an auto-generated header-only single-file distribution of libcluon.
-// Date: Sun, 11 Feb 2018 21:41:59 +0100
-// Version: 0.0.46
+// Date: Thu, 22 Feb 2018 21:30:51 +0100
+// Version: 0.0.51
 //
 //
 // Implementation of N4562 std::experimental::any (merged into C++17) for C++11 compilers.
@@ -4005,6 +4005,96 @@ struct isTripletForwardVisitable<cluon::data::Envelope> {
 #ifndef IMPLEMENTATIONS_FOR_MESSAGES
 #define IMPLEMENTATIONS_FOR_MESSAGES
 /*
+ * MIT License
+ *
+ * Copyright (c) 2018  Christian Berger
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#ifndef STRINGTOOLBOX_HPP
+#define STRINGTOOLBOX_HPP
+
+#include <algorithm>
+#include <string>
+#include <vector>
+
+namespace stringtoolbox {
+
+/**
+ * @return std::string without trailing whitespace characters.
+ */
+inline std::string &rtrim(std::string &str) noexcept {
+  str.erase(str.find_last_not_of(" \t") + 1);
+  return str;
+}
+
+/**
+ * @return std::tring without leading whitespace characters.
+ */
+inline std::string &ltrim(std::string &str) noexcept {
+  str.erase(0, str.find_first_not_of(" \t"));
+  return str;
+}
+
+/**
+ * @return std:string without leading and trailing whitespace characters.
+ */
+inline std::string &trim(std::string &str) noexcept {
+  return ltrim(rtrim(str));
+}
+
+/**
+ * @return std:string where all occurrences of characters FROM are replaced with TO.
+ */
+inline std::string replaceAll(const std::string &str,
+                              const char &FROM,
+                              const char &TO) noexcept {
+  std::string retVal{str};
+  std::replace(retVal.begin(), retVal.end(), FROM, TO);
+  return retVal;
+}
+
+/**
+ * @return std::vector<std:string> where the given string is split along delimiter.
+ */
+inline std::vector<std::string> split(const std::string &str,
+                               const char &delimiter) noexcept {
+  std::vector<std::string> retVal{};
+  std::string::size_type prev{0};
+  for (std::string::size_type i{str.find_first_of(delimiter, prev)};
+       i != std::string::npos;
+       prev = i + 1, i = str.find_first_of(delimiter, prev)) {
+    if (i != prev) {
+      retVal.emplace_back(str.substr(prev, i - prev));
+    }
+  }
+  if ((prev > 0) && (prev < str.size())) {
+    retVal.emplace_back(str.substr(prev, str.size() - prev));
+  }
+  return retVal;
+}
+
+} // namespace stringtoolbox
+
+#endif
+/*
  * Copyright (C) 2018  Christian Berger
  *
  * This program is free software: you can redistribute it and/or modify
@@ -4056,7 +4146,6 @@ inline cluon::data::TimeStamp convert(const std::chrono::system_clock::time_poin
 inline cluon::data::TimeStamp now() noexcept {
     return convert(std::chrono::system_clock::now());
 }
-
 
 } // namespace time
 } // namespace cluon
@@ -4212,28 +4301,6 @@ namespace cluon {
  */
 std::map<std::string, std::string> getCommandlineArguments(int32_t argc, char **argv) noexcept;
 
-/**
- * @return std::string without trailing whitespace characters.
- */
-inline std::string &rtrim(std::string &str) {
-    str.erase(str.find_last_not_of(" \t") + 1);
-    return str;
-}
-
-/**
- * @return std::tring without leading whitespace characters.
- */
-inline std::string &ltrim(std::string &str) {
-    str.erase(0, str.find_first_not_of(" \t"));
-    return str;
-}
-
-/**
- * @return std:string without leading and trailing whitespace characters.
- */
-inline std::string &trim(std::string &str) {
-    return ltrim(rtrim(str));
-}
 } // namespace cluon
 
 #endif
@@ -4763,8 +4830,7 @@ class LIBCLUON_API UDPReceiver {
      */
     UDPReceiver(const std::string &receiveFromAddress,
                 uint16_t receiveFromPort,
-                std::function<void(std::string &&, std::string &&, std::chrono::system_clock::time_point &&)>
-                    delegate) noexcept;
+                std::function<void(std::string &&, std::string &&, std::chrono::system_clock::time_point &&)> delegate) noexcept;
     ~UDPReceiver() noexcept;
 
     /**
@@ -4789,6 +4855,153 @@ class LIBCLUON_API UDPReceiver {
     std::atomic<bool> m_readFromSocketThreadRunning{false};
     std::thread m_readFromSocketThread{};
     std::function<void(std::string &&, std::string &&, std::chrono::system_clock::time_point)> m_delegate{};
+};
+} // namespace cluon
+
+#endif
+/*
+ * Copyright (C) 2018  Christian Berger
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef TCPCONNECTION_HPP
+#define TCPCONNECTION_HPP
+
+//#include "cluon/cluon.hpp"
+
+// clang-format off
+#ifdef WIN32
+    #include <Winsock2.h> // for WSAStartUp
+    #include <Ws2def.h>   // for struct sockaddr_in
+    #include <ws2tcpip.h> // for SOCKET
+#else
+    #include <netinet/in.h>
+#endif
+// clang-format on
+
+#include <cstdint>
+#include <atomic>
+#include <chrono>
+#include <functional>
+#include <mutex>
+#include <string>
+#include <thread>
+
+namespace cluon {
+/**
+To exchange data via TCP, simply include the header
+`#include <cluon/TCPConnection.hpp>`.
+
+Next, create an instance of class `cluon::TCPConnection` as follows:
+`cluon::TCPConnection connection("127.0.0.1", 1234, newDataDelegate, connectionLostDelegate);`.
+The first parameter is of type `std::string` expecting a numerical IPv4 address,
+the second parameter specifies the TCP port, from which data shall be received
+from, the third paraemter is of type `std::function` that is called whenever
+new bytes are available to be processed, and the last parameter is of type
+`std::function` that is called when the connection is lost.
+
+The complete signature for the newDataDelegate function is
+`std::function<void(std::string &&, std::string &&, std::chrono::system_clock::time_point &&) noexcept>`:
+The first parameter contains the bytes that have been received, the second
+parameter containes the human-readable representation of the sender
+(X.Y.Z.W:ABCD), and the last parameter is the time stamp when the data has been
+received.
+
+The complete signature for the connectionLostDelegate function is
+`std::function<void() noexcept>`.
+
+To finally send data, simply call the method `send` supplying the data to be
+sent: `connection.send(std::move("Hello World!")`. Please note that the data is
+supplied using the _move_-semantics. The method `send` returns a
+`std::pair<ssize_t, int32_t>` where the first element returns the size of the
+successfully sent bytes and the second element contains the error code in case
+the transmission of the data failed.
+
+An example using a C++ lambda expression would look as follows:
+
+\code{.cpp}
+cluon::TCPConnection connection("127.0.0.1", 1234,
+    [](std::string &&data, std::string &&sender, std::chrono::system_clock::time_point &&ts) noexcept {
+        const auto timestamp(std::chrono::system_clock::to_time_t(ts));
+        std::cout << "Received " << data.size() << " bytes"
+                  << " from " << sender
+                  << " at " << std::put_time(std::localtime(&timestamp), "%Y-%m-%d %X")
+                  << ", containing '" << data << "'." << std::endl;
+    },
+    [](){ std::cout << "Connection lost." << std::endl; });
+
+std::pair<ssize_t, int32_t> retVal = connection.send(std::move("Hello World!"));
+\endcode
+
+After creating an instance of class `cluon::TCPConnection`, it is immediately
+activated and concurrently waiting for data in a separate thread. To check
+whether the instance was created successfully and running, the method
+`isRunning()` should be called.
+*/
+class LIBCLUON_API TCPConnection {
+   private:
+    TCPConnection(const TCPConnection &) = delete;
+    TCPConnection(TCPConnection &&)      = delete;
+    TCPConnection &operator=(const TCPConnection &) = delete;
+    TCPConnection &operator=(TCPConnection &&) = delete;
+
+   public:
+    /**
+     * Constructor.
+     *
+     * @param address Numerical IPv4 address to receive UDP packets from.
+     * @param port Port to receive UDP packets from.
+     * @param newDataDelegate Functional (noexcept) to handle received bytes; parameters are received data, timestamp.
+     * @param connectionLostDelegate Functional (noexcept) to handle a lost connection.
+     */
+    TCPConnection(const std::string &address,
+                uint16_t port,
+                std::function<void(std::string &&, std::chrono::system_clock::time_point &&)> newDataDelegate,
+                std::function<void()> connectionLostDelegate) noexcept;
+    ~TCPConnection() noexcept;
+
+    /**
+     * @return true if the TCPConnection could successfully be created and is able to receive data.
+     */
+    bool isRunning() const noexcept;
+
+    /**
+     * Send a given string.
+     *
+     * @param data Data to send.
+     * @return Pair: Number of bytes sent and errno.
+     */
+    std::pair<ssize_t, int32_t> send(std::string &&data) const noexcept;
+
+   private:
+    /**
+     * This method closes the socket.
+     *
+     * @param errorCode Error code that caused this closing.
+     */
+    void closeSocket(int errorCode) noexcept;
+    void readFromSocket() noexcept;
+
+   private:
+    mutable std::mutex m_socketMutex{};
+    int32_t m_socket{-1};
+    struct sockaddr_in m_address {};
+    std::atomic<bool> m_readFromSocketThreadRunning{false};
+    std::thread m_readFromSocketThread{};
+    std::function<void(std::string &&, std::chrono::system_clock::time_point)> m_newDataDelegate{};
+    std::function<void()> m_connectionLostDelegate{};
 };
 } // namespace cluon
 
@@ -5394,8 +5607,7 @@ class LIBCLUON_API FromMsgPackVisitor {
         if (0 < m_keyValues.count(name)) {
             try {
                 std::map<std::string, FromMsgPackVisitor::MsgPackKeyValue> v
-                    = linb::any_cast<std::map<std::string, FromMsgPackVisitor::MsgPackKeyValue>>(
-                        m_keyValues[name].m_value);
+                    = linb::any_cast<std::map<std::string, FromMsgPackVisitor::MsgPackKeyValue>>(m_keyValues[name].m_value);
                 cluon::FromMsgPackVisitor nestedMsgPackDecoder(v);
                 value.accept(nestedMsgPackDecoder);
             } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
@@ -6062,9 +6274,73 @@ class LIBCLUON_API EnvelopeToJSON {
 
 //#include "cluon/FromProtoVisitor.hpp"
 //#include "cluon/cluonDataStructures.hpp"
+
+#include <cstring>
+#include <istream>
 #include <sstream>
+#include <utility>
+#include <vector>
+
+#include <iostream>
 
 namespace cluon {
+
+/**
+ * This method extracts an Envelope from the given istream that holds bytes in
+ * format:
+ *
+ *    0x0D 0xA4 LEN0 LEN1 LEN2 Proto-encoded cluon::data::Envelope
+ *
+ * 0xA4 LEN0 LEN1 LEN2 are little Endian.
+ *
+ * @param in Stream to read from.
+ * @return cluon::data::Envelope.
+ */
+inline std::pair<bool, cluon::data::Envelope> extractEnvelope(std::istream &in) noexcept {
+    bool retVal{false};
+    cluon::data::Envelope env;
+    if (in.good()) {
+        constexpr uint8_t OD4_HEADER_SIZE{5};
+        std::vector<char> buffer;
+        buffer.reserve(OD4_HEADER_SIZE);
+#ifdef WIN32                                           // LCOV_EXCL_LINE
+        buffer.clear();                                // LCOV_EXCL_LINE
+        retVal = true;                                 // LCOV_EXCL_LINE
+        for (uint8_t i{0}; i < OD4_HEADER_SIZE; i++) { // LCOV_EXCL_LINE
+            char c;                                    // LCOV_EXCL_LINE
+            in.get(c);                                 // LCOV_EXCL_LINE
+            retVal &= in.good();                       // LCOV_EXCL_LINE
+            buffer.push_back(c);                       // LCOV_EXCL_LINE
+        }
+        if (retVal) { // LCOV_EXCL_LINE
+#else                 // LCOV_EXCL_LINE
+        if (OD4_HEADER_SIZE == in.readsome(&buffer[0], OD4_HEADER_SIZE)) {
+#endif
+            if ((0x0D == static_cast<uint8_t>(buffer[0])) && (0xA4 == static_cast<uint8_t>(buffer[1]))) {
+                const uint32_t LENGTH{le32toh(*reinterpret_cast<uint32_t *>(&buffer[1])) >> 8};
+                buffer.reserve(LENGTH);
+#ifdef WIN32                                          // LCOV_EXCL_LINE
+                buffer.clear();                       // LCOV_EXCL_LINE
+                for (uint8_t i{0}; i < LENGTH; i++) { // LCOV_EXCL_LINE
+                    char c;                           // LCOV_EXCL_LINE
+                    in.get(c);                        // LCOV_EXCL_LINE
+                    retVal &= in.good();              // LCOV_EXCL_LINE
+                    buffer.push_back(c);              // LCOV_EXCL_LINE
+                }
+#else // LCOV_EXCL_LINE
+                retVal = static_cast<int32_t>(LENGTH) == in.readsome(&buffer[0], static_cast<std::streamsize>(LENGTH));
+#endif
+                if (retVal) {
+                    std::stringstream sstr(std::string(buffer.begin(), buffer.begin() + static_cast<std::streamsize>(LENGTH)));
+                    cluon::FromProtoVisitor protoDecoder;
+                    protoDecoder.decodeFrom(sstr);
+                    env.accept(protoDecoder);
+                }
+            }
+        }
+    }
+    return std::make_pair(retVal, env);
+}
 
 /**
  * @return Extract a given Envelope's payload into the desired type.
@@ -6298,10 +6574,7 @@ class LIBCLUON_API GenericMessage {
         template <typename T>
         void visit(uint32_t &id, std::string &&typeName, std::string &&name, T &value) noexcept {
             cluon::MetaMessage::MetaField mf;
-            mf.fieldIdentifier(id)
-                .fieldDataType(cluon::MetaMessage::MetaField::MESSAGE_T)
-                .fieldDataTypeName(typeName)
-                .fieldName(name);
+            mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::MESSAGE_T).fieldDataTypeName(typeName).fieldName(name);
 
             GenericMessage gm;
             gm.createFrom<T>(value);
@@ -6410,118 +6683,89 @@ class LIBCLUON_API GenericMessage {
         visitor.preVisit(m_metaMessage.messageIdentifier(), m_metaMessage.messageName(), m_longName);
 
         for (const auto &f : m_metaMessage.listOfMetaFields()) {
-            if (f.fieldDataType() == MetaMessage::MetaField::BOOL_T
-                && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            if (f.fieldDataType() == MetaMessage::MetaField::BOOL_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<bool &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::CHAR_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::CHAR_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<char &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT8_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT8_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<uint8_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::INT8_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::INT8_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<int8_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT16_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT16_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<uint16_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::INT16_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::INT16_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<int16_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT32_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT32_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<uint32_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::INT32_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::INT32_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<int32_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT64_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT64_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<uint64_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::INT64_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::INT64_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<int64_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::FLOAT_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::FLOAT_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<float &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::DOUBLE_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::DOUBLE_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<double &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (((f.fieldDataType() == MetaMessage::MetaField::STRING_T)
-                        || (f.fieldDataType() == MetaMessage::MetaField::BYTES_T))
+            } else if (((f.fieldDataType() == MetaMessage::MetaField::STRING_T) || (f.fieldDataType() == MetaMessage::MetaField::BYTES_T))
                        && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<std::string &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::MESSAGE_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::MESSAGE_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
-                    auto &v = linb::any_cast<cluon::GenericMessage &>(
-                        m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doVisit(
-                        f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
+                    auto &v = linb::any_cast<cluon::GenericMessage &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
+                    doVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, visitor);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
             }
@@ -6543,188 +6787,89 @@ class LIBCLUON_API GenericMessage {
         std::forward<PreVisitor>(_preVisit)(m_metaMessage.messageIdentifier(), m_metaMessage.messageName(), m_longName);
 
         for (const auto &f : m_metaMessage.listOfMetaFields()) {
-            if (f.fieldDataType() == MetaMessage::MetaField::BOOL_T
-                && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            if (f.fieldDataType() == MetaMessage::MetaField::BOOL_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<bool &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::CHAR_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::CHAR_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<char &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT8_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT8_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<uint8_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::INT8_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::INT8_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<int8_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT16_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT16_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<uint16_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::INT16_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::INT16_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<int16_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT32_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT32_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<uint32_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::INT32_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::INT32_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<int32_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT64_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::UINT64_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<uint64_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::INT64_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::INT64_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<int64_t &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::FLOAT_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::FLOAT_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<float &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::DOUBLE_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::DOUBLE_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<double &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (((f.fieldDataType() == MetaMessage::MetaField::STRING_T)
-                        || (f.fieldDataType() == MetaMessage::MetaField::BYTES_T))
+            } else if (((f.fieldDataType() == MetaMessage::MetaField::STRING_T) || (f.fieldDataType() == MetaMessage::MetaField::BYTES_T))
                        && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
                     auto &v = linb::any_cast<std::string &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
-            } else if (f.fieldDataType() == MetaMessage::MetaField::MESSAGE_T
-                       && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
+            } else if (f.fieldDataType() == MetaMessage::MetaField::MESSAGE_T && (0 < m_intermediateDataRepresentation.count(f.fieldIdentifier()))) {
                 try {
-                    auto &v = linb::any_cast<cluon::GenericMessage &>(
-                        m_intermediateDataRepresentation[f.fieldIdentifier()]);
-                    doTripletForwardVisit(f.fieldIdentifier(),
-                                          std::move(f.fieldDataTypeName()),
-                                          std::move(f.fieldName()),
-                                          v,
-                                          _preVisit,
-                                          _visit,
-                                          _postVisit);
+                    auto &v = linb::any_cast<cluon::GenericMessage &>(m_intermediateDataRepresentation[f.fieldIdentifier()]);
+                    doTripletForwardVisit(f.fieldIdentifier(), std::move(f.fieldDataTypeName()), std::move(f.fieldName()), v, _preVisit, _visit, _postVisit);
                 } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
                 }
             }
@@ -6882,6 +7027,13 @@ class LIBCLUON_API OD4Session {
     OD4Session(uint16_t CID, std::function<void(cluon::data::Envelope &&envelope)> delegate = nullptr) noexcept;
 
     /**
+     * This method will send a given Envelope to this OpenDaVINCI v4 session.
+     *
+     * @param envelope to be sent.
+     */
+    void send(cluon::data::Envelope &&envelope) noexcept;
+
+    /**
      * This method will send a given message to this OpenDaVINCI v4 session.
      *
      * @param message Message to be sent.
@@ -6889,9 +7041,7 @@ class LIBCLUON_API OD4Session {
      * @param senderStamp Optional sender stamp (default = 0).
      */
     template <typename T>
-    void send(T &message,
-              const cluon::data::TimeStamp &sampleTimeStamp = cluon::data::TimeStamp(),
-              uint32_t senderStamp                          = 0) noexcept {
+    void send(T &message, const cluon::data::TimeStamp &sampleTimeStamp = cluon::data::TimeStamp(), uint32_t senderStamp = 0) noexcept {
         cluon::ToProtoVisitor protoEncoder;
 
         cluon::data::Envelope envelope;
@@ -6900,13 +7050,11 @@ class LIBCLUON_API OD4Session {
             message.accept(protoEncoder);
             envelope.serializedData(protoEncoder.encodedData());
             envelope.sent(cluon::time::now());
-            envelope.sampleTimeStamp((0 == (sampleTimeStamp.seconds() + sampleTimeStamp.microseconds()))
-                                         ? envelope.sent()
-                                         : sampleTimeStamp);
+            envelope.sampleTimeStamp((0 == (sampleTimeStamp.seconds() + sampleTimeStamp.microseconds())) ? envelope.sent() : sampleTimeStamp);
             envelope.senderStamp(senderStamp);
         }
 
-        sendInternal(cluon::OD4Session::serializeAsOD4Container(std::move(envelope)));
+        send(std::move(envelope));
     }
 
    public:
@@ -7066,23 +7214,16 @@ inline std::map<std::string, std::string> getCommandlineArguments(int32_t argc, 
     argh::parser commandline{argc, argv};
     std::map<std::string, std::string> retVal;
 
-    for(auto &positionalArgument : commandline.pos_args()) {
-        retVal[positionalArgument] = "";
-    }
+    for (auto &positionalArgument : commandline.pos_args()) { retVal[positionalArgument] = ""; }
 
-    for(auto &flag : commandline.flags()) {
-        retVal[flag] = "1";
-    }
+    for (auto &flag : commandline.flags()) { retVal[flag] = "1"; }
 
-    for(auto &parameter : commandline.params()) {
-        retVal[parameter.first] = parameter.second;
-    }
+    for (auto &parameter : commandline.params()) { retVal[parameter.first] = parameter.second; }
 
     return retVal;
 }
 
 } // namespace cluon
-
 /*
  * Copyright (C) 2017-2018  Christian Berger
  *
@@ -7208,6 +7349,7 @@ inline void MetaMessage::accept(const std::function<void(const MetaMessage &)> &
  */
 
 //#include "cluon/MessageParser.hpp"
+//#include "cluon/stringtoolbox.hpp"
 
 //#include "cpp-peglib/peglib.h"
 
@@ -7248,7 +7390,7 @@ inline std::pair<std::vector<MetaMessage>, MessageParser::MessageParserErrorCode
 
         MESSAGE_TYPE                <- < IDENTIFIER ('.' IDENTIFIER)* >
 
-        IDENTIFIER                  <- < [a-zA-Z][a-zA-Z0-9]* >
+        IDENTIFIER                  <- < [a-zA-Z][a-zA-Z0-9_]* >
         DIGIT                       <- < [0-9] >
         NATURAL_NUMBER              <- < [1-9] DIGIT* >
         FLOAT_NUMBER                <- < ('+' / '-')? DIGIT DIGIT* (('.') DIGIT*)? >
@@ -7262,43 +7404,33 @@ inline std::pair<std::vector<MetaMessage>, MessageParser::MessageParserErrorCode
     ////////////////////////////////////////////////////////////////////////////
 
     // Function to check for unique field names.
-    std::function<bool(const peg::Ast &,
-                       std::string &,
-                       std::vector<std::string> &,
-                       std::vector<std::string> &,
-                       std::vector<int32_t> &,
-                       std::vector<int32_t> &)>
-        check4UniqueFieldNames
-        = [&checkForUniqueFieldNames = check4UniqueFieldNames](const peg::Ast &ast,
-                                                               std::string &prefix,
-                                                               std::vector<std::string> &messageNames,
-                                                               std::vector<std::string> &fieldNames,
-                                                               std::vector<int32_t> &numericalMessageIdentifiers,
-                                                               std::vector<int32_t> &numericalFieldIdentifiers) {
+    std::function<bool(const peg::Ast &, std::string &, std::vector<std::string> &, std::vector<std::string> &, std::vector<int32_t> &, std::vector<int32_t> &)>
+        check4UniqueFieldNames = [&checkForUniqueFieldNames = check4UniqueFieldNames](const peg::Ast &ast,
+                                                                                      std::string &prefix,
+                                                                                      std::vector<std::string> &messageNames,
+                                                                                      std::vector<std::string> &fieldNames,
+                                                                                      std::vector<int32_t> &numericalMessageIdentifiers,
+                                                                                      std::vector<int32_t> &numericalFieldIdentifiers) {
         bool retVal = true;
         // First, we need to visit the children of AST node MESSAGES_SPECIFICATION.
         if ("MESSAGES_SPECIFICATION" == ast.name) {
             for (const auto &node : ast.nodes) {
-                retVal &= checkForUniqueFieldNames(
-                    *node, prefix, messageNames, fieldNames, numericalMessageIdentifiers, numericalFieldIdentifiers);
+                retVal &= checkForUniqueFieldNames(*node, prefix, messageNames, fieldNames, numericalMessageIdentifiers, numericalFieldIdentifiers);
             }
             // Try finding duplicated message identifiers.
             if (retVal) {
                 std::sort(std::begin(numericalMessageIdentifiers), std::end(numericalMessageIdentifiers));
                 int32_t duplicatedMessageIdentifier{-1};
-                for (auto it{std::begin(numericalMessageIdentifiers)}; it != std::end(numericalMessageIdentifiers);
-                     it++) {
+                for (auto it{std::begin(numericalMessageIdentifiers)}; it != std::end(numericalMessageIdentifiers); it++) {
                     if (it + 1 != std::end(numericalMessageIdentifiers)) {
-                        if (std::find(it + 1, std::end(numericalMessageIdentifiers), *it)
-                            != std::end(numericalMessageIdentifiers)) {
+                        if (std::find(it + 1, std::end(numericalMessageIdentifiers), *it) != std::end(numericalMessageIdentifiers)) {
                             duplicatedMessageIdentifier = *it;
                         }
                     }
                 }
                 retVal &= (-1 == duplicatedMessageIdentifier);
                 if (!retVal) {
-                    std::cerr << "[cluon::MessageParser] Found duplicated numerical message identifier: "
-                              << duplicatedMessageIdentifier << '\n';
+                    std::cerr << "[cluon::MessageParser] Found duplicated numerical message identifier: " << duplicatedMessageIdentifier << '\n';
                 }
             }
             // Try finding duplicated message names.
@@ -7314,8 +7446,7 @@ inline std::pair<std::vector<MetaMessage>, MessageParser::MessageParserErrorCode
                 }
                 retVal &= (duplicatedMessageName.empty());
                 if (!retVal) {
-                    std::cerr << "[cluon::MessageParser] Found duplicated message name '" << duplicatedMessageName
-                              << "'" << '\n';
+                    std::cerr << "[cluon::MessageParser] Found duplicated message name '" << duplicatedMessageName << "'" << '\n';
                 }
             }
         }
@@ -7329,16 +7460,11 @@ inline std::pair<std::vector<MetaMessage>, MessageParser::MessageParserErrorCode
             for (const auto &node : ast.nodes) {
                 if ("MESSAGE_IDENTIFIER" == node->name) {
                     prefix = node->token;
-                    messageNames.push_back(trim(prefix));
+                    messageNames.push_back(::stringtoolbox::trim(prefix));
                 } else if ("NATURAL_NUMBER" == node->name) {
                     numericalMessageIdentifiers.push_back(std::stoi(node->token));
                 } else if ("PRIMITIVE_FIELD" == node->name) {
-                    retVal &= checkForUniqueFieldNames(*node,
-                                                       prefix,
-                                                       messageNames,
-                                                       fieldNames,
-                                                       numericalMessageIdentifiers,
-                                                       numericalFieldIdentifiers);
+                    retVal &= checkForUniqueFieldNames(*node, prefix, messageNames, fieldNames, numericalMessageIdentifiers, numericalFieldIdentifiers);
                 }
             }
 
@@ -7348,8 +7474,7 @@ inline std::pair<std::vector<MetaMessage>, MessageParser::MessageParserErrorCode
                 int32_t duplicatedFieldIdentifier{-1};
                 for (auto it{std::begin(numericalFieldIdentifiers)}; it != std::end(numericalFieldIdentifiers); it++) {
                     if (it + 1 != std::end(numericalFieldIdentifiers)) {
-                        if (std::find(it + 1, std::end(numericalFieldIdentifiers), *it)
-                            != std::end(numericalFieldIdentifiers)) {
+                        if (std::find(it + 1, std::end(numericalFieldIdentifiers), *it) != std::end(numericalFieldIdentifiers)) {
                             duplicatedFieldIdentifier = *it;
                         }
                     }
@@ -7357,7 +7482,7 @@ inline std::pair<std::vector<MetaMessage>, MessageParser::MessageParserErrorCode
                 retVal &= (-1 == duplicatedFieldIdentifier);
                 if (!retVal) {
                     std::cerr << "[cluon::MessageParser] Found duplicated numerical field identifier in message "
-                              << "'" << cluon::trim(prefix) << "': " << duplicatedFieldIdentifier << '\n';
+                              << "'" << ::stringtoolbox::trim(prefix) << "': " << duplicatedFieldIdentifier << '\n';
                 }
             }
             // Try finding duplicated field names.
@@ -7373,8 +7498,8 @@ inline std::pair<std::vector<MetaMessage>, MessageParser::MessageParserErrorCode
                 }
                 retVal &= (duplicatedFieldName.empty());
                 if (!retVal) {
-                    std::cerr << "[cluon::MessageParser] Found duplicated field name in message '"
-                              << cluon::trim(prefix) << "': '" << duplicatedFieldName << "'" << '\n';
+                    std::cerr << "[cluon::MessageParser] Found duplicated field name in message '" << ::stringtoolbox::trim(prefix) << "': '" << duplicatedFieldName
+                              << "'" << '\n';
                 }
             }
         }
@@ -7382,24 +7507,21 @@ inline std::pair<std::vector<MetaMessage>, MessageParser::MessageParserErrorCode
         // which we need to extract the field "token".
         if (ast.name == "PRIMITIVE_FIELD") {
             // Extract the value of entry "IDENTIFIER".
-            auto nodeIdentifier = std::find_if(
-                std::begin(ast.nodes), std::end(ast.nodes), [](auto a) { return (a->name == "IDENTIFIER"); });
+            auto nodeIdentifier = std::find_if(std::begin(ast.nodes), std::end(ast.nodes), [](auto a) { return (a->name == "IDENTIFIER"); });
             if (nodeIdentifier != std::end(ast.nodes)) {
                 fieldNames.push_back((*nodeIdentifier)->token);
             }
 
             // Visit this node's children to check for duplicated numerical identifiers.
             for (const auto &node : ast.nodes) {
-                retVal &= checkForUniqueFieldNames(
-                    *node, prefix, messageNames, fieldNames, numericalMessageIdentifiers, numericalFieldIdentifiers);
+                retVal &= checkForUniqueFieldNames(*node, prefix, messageNames, fieldNames, numericalMessageIdentifiers, numericalFieldIdentifiers);
             }
         }
         // Within AST node PRIMITIVE_FIELD, we have PRIMITIVE_FIELD_OPTIONS from
         // which we need to extract the field "token".
         if (ast.name == "PRIMITIVE_FIELD_OPTIONS") {
             // Extract the value of entry "IDENTIFIER".
-            auto nodeNumericalFieldIdentifier = std::find_if(
-                std::begin(ast.nodes), std::end(ast.nodes), [](auto a) { return (a->name == "NATURAL_NUMBER"); });
+            auto nodeNumericalFieldIdentifier = std::find_if(std::begin(ast.nodes), std::end(ast.nodes), [](auto a) { return (a->name == "NATURAL_NUMBER"); });
             if (nodeNumericalFieldIdentifier != std::end(ast.nodes)) {
                 numericalFieldIdentifiers.push_back(std::stoi((*nodeNumericalFieldIdentifier)->token));
             }
@@ -7411,122 +7533,112 @@ inline std::pair<std::vector<MetaMessage>, MessageParser::MessageParserErrorCode
     ////////////////////////////////////////////////////////////////////////////
 
     // Function to transform AST into list of MetaMessages.
-    std::function<void(const peg::Ast &, std::vector<MetaMessage> &)> transform2MetaMessages =
-        [](const peg::Ast &ast, std::vector<MetaMessage> &listOfMetaMessages) {
-            // "Inner"-lambda to handle various types of message declarations.
-            auto createMetaMessage = [](const peg::Ast &_node, std::string _packageName) -> MetaMessage {
-                MetaMessage mm;
-                mm.packageName(trim(_packageName));
-                uint32_t fieldIdentifierCounter{0};
-                for (const auto &e : _node.nodes) {
-                    if ("MESSAGE_IDENTIFIER" == e->name) {
-                        std::string _messageName = e->token;
-                        mm.messageName(trim(_messageName));
-                    } else if ("NATURAL_NUMBER" == e->name) {
-                        mm.messageIdentifier(static_cast<uint32_t>(std::stoi(e->token)));
-                    } else if ("PRIMITIVE_FIELD" == e->name) {
-                        std::string _fieldName;
-                        auto fieldName = std::find_if(
-                            std::begin(e->nodes), std::end(e->nodes), [](auto a) { return (a->name == "IDENTIFIER"); });
-                        if (fieldName != std::end(e->nodes)) {
-                            _fieldName = (*fieldName)->token;
-                        }
+    std::function<void(const peg::Ast &, std::vector<MetaMessage> &)> transform2MetaMessages
+        = [](const peg::Ast &ast, std::vector<MetaMessage> &listOfMetaMessages) {
+              // "Inner"-lambda to handle various types of message declarations.
+              auto createMetaMessage = [](const peg::Ast &_node, std::string _packageName) -> MetaMessage {
+                  MetaMessage mm;
+                  mm.packageName(::stringtoolbox::trim(_packageName));
+                  uint32_t fieldIdentifierCounter{0};
+                  for (const auto &e : _node.nodes) {
+                      if ("MESSAGE_IDENTIFIER" == e->name) {
+                          std::string _messageName = e->token;
+                          mm.messageName(::stringtoolbox::trim(_messageName));
+                      } else if ("NATURAL_NUMBER" == e->name) {
+                          mm.messageIdentifier(static_cast<uint32_t>(std::stoi(e->token)));
+                      } else if ("PRIMITIVE_FIELD" == e->name) {
+                          std::string _fieldName;
+                          auto fieldName = std::find_if(std::begin(e->nodes), std::end(e->nodes), [](auto a) { return (a->name == "IDENTIFIER"); });
+                          if (fieldName != std::end(e->nodes)) {
+                              _fieldName = (*fieldName)->token;
+                          }
 
-                        std::string _fieldDataType;
-                        auto fieldDataType = std::find_if(std::begin(e->nodes), std::end(e->nodes), [](auto a) {
-                            return (a->name == "PRIMITIVE_TYPE");
-                        });
-                        if (fieldDataType != std::end(e->nodes)) {
-                            _fieldDataType = (*fieldDataType)->token;
-                        }
+                          std::string _fieldDataType;
+                          auto fieldDataType = std::find_if(std::begin(e->nodes), std::end(e->nodes), [](auto a) { return (a->name == "PRIMITIVE_TYPE"); });
+                          if (fieldDataType != std::end(e->nodes)) {
+                              _fieldDataType = (*fieldDataType)->token;
+                          }
 
-                        fieldIdentifierCounter++; // Automatically count expected field identifiers in case of missing
-                                                  // field options.
-                        std::string _fieldIdentifier;
-                        auto fieldIdentifier = std::find_if(std::begin(e->nodes), std::end(e->nodes), [](auto a) {
-                            return (a->name == "NATURAL_NUMBER");
-                        });
-                        if (fieldIdentifier != std::end(e->nodes)) {
-                            _fieldIdentifier = (*fieldIdentifier)->token;
-                        }
+                          fieldIdentifierCounter++; // Automatically count expected field identifiers in case of missing
+                                                    // field options.
+                          std::string _fieldIdentifier;
+                          auto fieldIdentifier = std::find_if(std::begin(e->nodes), std::end(e->nodes), [](auto a) { return (a->name == "NATURAL_NUMBER"); });
+                          if (fieldIdentifier != std::end(e->nodes)) {
+                              _fieldIdentifier = (*fieldIdentifier)->token;
+                          }
 
-                        std::string _fieldDefaultInitializerValue;
-                        auto primitiveFieldOptions = std::find_if(std::begin(e->nodes), std::end(e->nodes), [](auto a) {
-                            return (a->name == "PRIMITIVE_FIELD_OPTIONS");
-                        });
-                        if (primitiveFieldOptions != std::end(e->nodes)) {
-                            for (const auto &f : (*primitiveFieldOptions)->nodes) {
-                                if ("NATURAL_NUMBER" != f->name) {
-                                    if ("STRING" == f->name) {
-                                        _fieldDefaultInitializerValue = "\"" + f->token + "\""; // NOLINT
-                                    } else if ("CHARACTER" == f->name) {
-                                        _fieldDefaultInitializerValue = "'" + f->token + "'";
-                                    } else {
-                                        _fieldDefaultInitializerValue = f->token;
-                                    }
-                                }
-                            }
-                        }
+                          std::string _fieldDefaultInitializerValue;
+                          auto primitiveFieldOptions
+                              = std::find_if(std::begin(e->nodes), std::end(e->nodes), [](auto a) { return (a->name == "PRIMITIVE_FIELD_OPTIONS"); });
+                          if (primitiveFieldOptions != std::end(e->nodes)) {
+                              for (const auto &f : (*primitiveFieldOptions)->nodes) {
+                                  if ("NATURAL_NUMBER" != f->name) {
+                                      if ("STRING" == f->name) {
+                                          _fieldDefaultInitializerValue = "\"" + f->token + "\""; // NOLINT
+                                      } else if ("CHARACTER" == f->name) {
+                                          _fieldDefaultInitializerValue = "'" + f->token + "'";
+                                      } else {
+                                          _fieldDefaultInitializerValue = f->token;
+                                      }
+                                  }
+                              }
+                          }
 
-                        std::map<std::string, MetaMessage::MetaField::MetaFieldDataTypes> STRING_TO_DATATYPE_MAP = {
-                            {"bool", MetaMessage::MetaField::BOOL_T},
-                            {"char", MetaMessage::MetaField::CHAR_T},
-                            {"uint8", MetaMessage::MetaField::UINT8_T},
-                            {"int8", MetaMessage::MetaField::INT8_T},
-                            {"uint16", MetaMessage::MetaField::UINT16_T},
-                            {"int16", MetaMessage::MetaField::INT16_T},
-                            {"uint32", MetaMessage::MetaField::UINT32_T},
-                            {"int32", MetaMessage::MetaField::INT32_T},
-                            {"uint64", MetaMessage::MetaField::UINT64_T},
-                            {"int64", MetaMessage::MetaField::INT64_T},
-                            {"float", MetaMessage::MetaField::FLOAT_T},
-                            {"double", MetaMessage::MetaField::DOUBLE_T},
-                            {"string", MetaMessage::MetaField::STRING_T},
-                            {"bytes", MetaMessage::MetaField::BYTES_T},
-                        };
+                          std::map<std::string, MetaMessage::MetaField::MetaFieldDataTypes> STRING_TO_DATATYPE_MAP = {
+                              {"bool", MetaMessage::MetaField::BOOL_T},
+                              {"char", MetaMessage::MetaField::CHAR_T},
+                              {"uint8", MetaMessage::MetaField::UINT8_T},
+                              {"int8", MetaMessage::MetaField::INT8_T},
+                              {"uint16", MetaMessage::MetaField::UINT16_T},
+                              {"int16", MetaMessage::MetaField::INT16_T},
+                              {"uint32", MetaMessage::MetaField::UINT32_T},
+                              {"int32", MetaMessage::MetaField::INT32_T},
+                              {"uint64", MetaMessage::MetaField::UINT64_T},
+                              {"int64", MetaMessage::MetaField::INT64_T},
+                              {"float", MetaMessage::MetaField::FLOAT_T},
+                              {"double", MetaMessage::MetaField::DOUBLE_T},
+                              {"string", MetaMessage::MetaField::STRING_T},
+                              {"bytes", MetaMessage::MetaField::BYTES_T},
+                          };
 
-                        MetaMessage::MetaField mf;
-                        if (0 < STRING_TO_DATATYPE_MAP.count(_fieldDataType)) {
-                            mf.fieldDataType(STRING_TO_DATATYPE_MAP[_fieldDataType]);
-                        } else {
-                            mf.fieldDataType(MetaMessage::MetaField::MESSAGE_T);
-                        }
-                        mf.fieldDataTypeName(cluon::trim(_fieldDataType));
-                        mf.fieldName(trim(_fieldName));
-                        mf.fieldIdentifier((!_fieldIdentifier.empty()
-                                                ? static_cast<uint32_t>(std::stoi(trim(_fieldIdentifier)))
-                                                : fieldIdentifierCounter));
-                        mf.defaultInitializationValue(_fieldDefaultInitializerValue);
-                        mm.add(std::move(mf));
-                    }
-                }
-                return mm;
-            };
+                          MetaMessage::MetaField mf;
+                          if (0 < STRING_TO_DATATYPE_MAP.count(_fieldDataType)) {
+                              mf.fieldDataType(STRING_TO_DATATYPE_MAP[_fieldDataType]);
+                          } else {
+                              mf.fieldDataType(MetaMessage::MetaField::MESSAGE_T);
+                          }
+                          mf.fieldDataTypeName(::stringtoolbox::trim(_fieldDataType));
+                          mf.fieldName(::stringtoolbox::trim(_fieldName));
+                          mf.fieldIdentifier((!_fieldIdentifier.empty() ? static_cast<uint32_t>(std::stoi(::stringtoolbox::trim(_fieldIdentifier))) : fieldIdentifierCounter));
+                          mf.defaultInitializationValue(_fieldDefaultInitializerValue);
+                          mm.add(std::move(mf));
+                      }
+                  }
+                  return mm;
+              };
 
-            ////////////////////////////////////////////////////////////////////////
+              ////////////////////////////////////////////////////////////////////////
 
-            // Case: "package XYZ" present.
-            if ("MESSAGES_SPECIFICATION" == ast.name) {
-                // Extract the value of entry "PACKAGE_IDENTIFIER".
-                auto nodeIdentifier = std::find_if(std::begin(ast.nodes), std::end(ast.nodes), [](auto a) {
-                    return (a->name == "PACKAGE_IDENTIFIER");
-                });
-                std::string packageName;
-                if (nodeIdentifier != std::end(ast.nodes)) {
-                    packageName = (*nodeIdentifier)->token;
-                }
+              // Case: "package XYZ" present.
+              if ("MESSAGES_SPECIFICATION" == ast.name) {
+                  // Extract the value of entry "PACKAGE_IDENTIFIER".
+                  auto nodeIdentifier = std::find_if(std::begin(ast.nodes), std::end(ast.nodes), [](auto a) { return (a->name == "PACKAGE_IDENTIFIER"); });
+                  std::string packageName;
+                  if (nodeIdentifier != std::end(ast.nodes)) {
+                      packageName = (*nodeIdentifier)->token;
+                  }
 
-                // Extract the value of entry "MESSAGE_DECLARATION".
-                for (const auto &node : ast.nodes) {
-                    if (node->name == "MESSAGE_DECLARATION") {
-                        listOfMetaMessages.emplace_back(createMetaMessage(*node, packageName));
-                    }
-                }
-            } else {
-                // In case we only have one single message and no package.
-                listOfMetaMessages.emplace_back(createMetaMessage(ast, ""));
-            }
-        };
+                  // Extract the value of entry "MESSAGE_DECLARATION".
+                  for (const auto &node : ast.nodes) {
+                      if (node->name == "MESSAGE_DECLARATION") {
+                          listOfMetaMessages.emplace_back(createMetaMessage(*node, packageName));
+                      }
+                  }
+              } else {
+                  // In case we only have one single message and no package.
+                  listOfMetaMessages.emplace_back(createMetaMessage(ast, ""));
+              }
+          };
 
     ////////////////////////////////////////////////////////////////////////////
 
@@ -7540,9 +7652,9 @@ inline std::pair<std::vector<MetaMessage>, MessageParser::MessageParserErrorCode
     std::string inputWithoutComments{input};
     try {
         const std::string MATCH_COMMENTS_REGEX = R"((//.*)|/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/)";
-        inputWithoutComments = std::regex_replace(input, std::regex(MATCH_COMMENTS_REGEX), ""); // NOLINT
-    } catch (std::regex_error &) {                                                              // LCOV_EXCL_LINE
-    } catch (std::bad_cast &) {                                                                 // LCOV_EXCL_LINE
+        inputWithoutComments                   = std::regex_replace(input, std::regex(MATCH_COMMENTS_REGEX), ""); // NOLINT
+    } catch (std::regex_error &) {                                                                                // LCOV_EXCL_LINE
+    } catch (std::bad_cast &) {                                                                                   // LCOV_EXCL_LINE
     }
     try {
         std::vector<MetaMessage> listOfMetaMessages{};
@@ -7555,12 +7667,7 @@ inline std::pair<std::vector<MetaMessage>, MessageParser::MessageParserErrorCode
                 std::vector<std::string> tmpFieldNames{};
                 std::vector<int32_t> tmpNumericalMessageIdentifiers{};
                 std::vector<int32_t> tmpNumericalFieldIdentifiers{};
-                if (check4UniqueFieldNames(*ast,
-                                           tmpPrefix,
-                                           tmpMessageNames,
-                                           tmpFieldNames,
-                                           tmpNumericalMessageIdentifiers,
-                                           tmpNumericalFieldIdentifiers)) {
+                if (check4UniqueFieldNames(*ast, tmpPrefix, tmpMessageNames, tmpFieldNames, tmpNumericalMessageIdentifiers, tmpNumericalFieldIdentifiers)) {
                     transform2MetaMessages(*ast, listOfMetaMessages);
                     retVal = {listOfMetaMessages, MessageParserErrorCodes::NO_ERROR};
                 } else {
@@ -7624,9 +7731,7 @@ inline UDPSender::UDPSender(const std::string &sendToAddress, uint16_t sendToPor
     std::vector<int> sendToAddressTokens{std::istream_iterator<int>(sstr), std::istream_iterator<int>()};
 
     if (!sendToAddress.empty() && (4 == sendToAddressTokens.size())
-        && !(std::end(sendToAddressTokens)
-             != std::find_if(
-                    sendToAddressTokens.begin(), sendToAddressTokens.end(), [](int a) { return (a < 0) || (a > 255); }))
+        && !(std::end(sendToAddressTokens) != std::find_if(sendToAddressTokens.begin(), sendToAddressTokens.end(), [](int a) { return (a < 0) || (a > 255); }))
         && (0 < sendToPort)) {
         ::memset(&m_sendToAddress, 0, sizeof(m_sendToAddress));
         m_sendToAddress.sin_addr.s_addr = ::inet_addr(sendToAddress.c_str());
@@ -7712,7 +7817,6 @@ inline std::pair<ssize_t, int32_t> UDPSender::send(std::string &&data) const noe
 
 //#include "cluon/UDPReceiver.hpp"
 //#include "cluon/UDPPacketSizeConstraints.hpp"
-//#include "cluon/cluonDataStructures.hpp"
 
 // clang-format off
 #ifdef WIN32
@@ -7738,10 +7842,9 @@ inline std::pair<ssize_t, int32_t> UDPSender::send(std::string &&data) const noe
 
 namespace cluon {
 
-inline UDPReceiver::UDPReceiver(
-    const std::string &receiveFromAddress,
-    uint16_t receiveFromPort,
-    std::function<void(std::string &&, std::string &&, std::chrono::system_clock::time_point &&)> delegate) noexcept
+inline UDPReceiver::UDPReceiver(const std::string &receiveFromAddress,
+                         uint16_t receiveFromPort,
+                         std::function<void(std::string &&, std::string &&, std::chrono::system_clock::time_point &&)> delegate) noexcept
     : m_receiveFromAddress()
     , m_mreq()
     , m_readFromSocketThread()
@@ -7754,14 +7857,11 @@ inline UDPReceiver::UDPReceiver(
 
     if ((!receiveFromAddress.empty()) && (4 == receiveFromAddressTokens.size())
         && !(std::end(receiveFromAddressTokens)
-             != std::find_if(receiveFromAddressTokens.begin(),
-                             receiveFromAddressTokens.end(),
-                             [](int a) { return (a < 0) || (a > 255); }))
+             != std::find_if(receiveFromAddressTokens.begin(), receiveFromAddressTokens.end(), [](int a) { return (a < 0) || (a > 255); }))
         && (0 < receiveFromPort)) {
         // Check for valid IP address.
         struct sockaddr_in tmpSocketAddress {};
-        const bool isValid = (0 < ::inet_pton(AF_INET, receiveFromAddress.c_str(), &(tmpSocketAddress.sin_addr)))
-                             && (224 > receiveFromAddressTokens[0]);
+        const bool isValid = (0 < ::inet_pton(AF_INET, receiveFromAddress.c_str(), &(tmpSocketAddress.sin_addr))) && (224 > receiveFromAddressTokens[0]);
 
         // Check for UDP multicast, i.e., IP address range [225.0.0.1 - 239.255.255.255].
         m_isMulticast = (((224 < receiveFromAddressTokens[0]) && (receiveFromAddressTokens[0] <= 239))
@@ -7774,8 +7874,7 @@ inline UDPReceiver::UDPReceiver(
         // According to http://www.sockets.com/err_lst1.htm, the binding is
         // different on Windows opposed to POSIX when using the real address
         // here; thus, we need to use INADDR_ANY.
-        m_receiveFromAddress.sin_addr.s_addr
-            = (m_isMulticast ? htonl(INADDR_ANY) : ::inet_addr(receiveFromAddress.c_str()));
+        m_receiveFromAddress.sin_addr.s_addr = (m_isMulticast ? htonl(INADDR_ANY) : ::inet_addr(receiveFromAddress.c_str()));
 #else
         m_receiveFromAddress.sin_addr.s_addr = ::inet_addr(receiveFromAddress.c_str());
 #endif
@@ -7960,11 +8059,6 @@ inline void UDPReceiver::readFromSocket() noexcept {
                     std::chrono::time_point<std::chrono::system_clock, std::chrono::microseconds> transformedTimePoint(
                         std::chrono::microseconds(receivedTimeStamp.tv_sec * 1000000L + receivedTimeStamp.tv_usec));
                     timestamp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(transformedTimePoint);
-
-                    cluon::data::TimeStamp ts;
-                    ts.seconds(static_cast<int32_t>(receivedTimeStamp.tv_sec));
-                    ts.microseconds(static_cast<int32_t>(receivedTimeStamp.tv_usec));
-
                 } else { // LCOV_EXCL_LINE
                     // In case the ioctl failed, fall back to chrono. // LCOV_EXCL_LINE
                     timestamp = std::chrono::system_clock::now(); // LCOV_EXCL_LINE
@@ -7978,8 +8072,7 @@ inline void UDPReceiver::readFromSocket() noexcept {
                             &((reinterpret_cast<struct sockaddr_in *>(&remote))->sin_addr), // NOLINT
                             remoteAddress.data(),
                             remoteAddress.max_size());
-                const uint16_t RECVFROM_PORT{
-                    ntohs(reinterpret_cast<struct sockaddr_in *>(&remote)->sin_port)}; // NOLINT
+                const uint16_t RECVFROM_PORT{ntohs(reinterpret_cast<struct sockaddr_in *>(&remote)->sin_port)}; // NOLINT
 
                 // Call delegate.
                 m_delegate(std::string(buffer.data(), static_cast<size_t>(bytesRead)),
@@ -7989,6 +8082,240 @@ inline void UDPReceiver::readFromSocket() noexcept {
         } else {
             // Let the operating system yield other threads.
             using namespace std::literals::chrono_literals; // NOLINT
+            std::this_thread::sleep_for(1ms);
+        }
+    }
+}
+} // namespace cluon
+/*
+ * Copyright (C) 2018  Christian Berger
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+//#include "cluon/TCPConnection.hpp"
+
+// clang-format off
+#ifdef WIN32
+    #include <errno.h>
+    #include <iostream>
+#else
+    #include <arpa/inet.h>
+    #include <sys/ioctl.h>
+    #include <sys/socket.h>
+    #include <sys/types.h>
+    #include <unistd.h>
+#endif
+// clang-format on
+
+#include <cstring>
+#include <algorithm>
+#include <array>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <utility>
+#include <vector>
+
+namespace cluon {
+
+inline TCPConnection::TCPConnection(const std::string &address,
+                            uint16_t port,
+                            std::function<void(std::string &&, std::chrono::system_clock::time_point &&)> newDataDelegate,
+                            std::function<void()> connectionLostDelegate) noexcept
+    : m_address()
+    , m_readFromSocketThread()
+    , m_newDataDelegate(std::move(newDataDelegate))
+    , m_connectionLostDelegate(std::move(connectionLostDelegate)) {
+    // Decompose given address string to check validity with numerical IPv4 address.
+    std::string tmp{address};
+    std::replace(tmp.begin(), tmp.end(), '.', ' ');
+    std::istringstream sstr{tmp};
+    std::vector<int> addressTokens{std::istream_iterator<int>(sstr), std::istream_iterator<int>()};
+
+    if ((!addressTokens.empty()) && (4 == addressTokens.size())
+        && !(std::end(addressTokens)
+             != std::find_if(addressTokens.begin(), addressTokens.end(), [](int a) { return (a < 0) || (a > 255); }))
+        && (0 < port)) {
+        // Check for valid IP address.
+        struct sockaddr_in tmpSocketAddress {};
+        const bool isValid = (0 < ::inet_pton(AF_INET, address.c_str(), &(tmpSocketAddress.sin_addr)));
+        if (isValid) {
+            std::memset(&m_address, 0, sizeof(m_address));
+            m_address.sin_addr.s_addr = ::inet_addr(address.c_str());
+            m_address.sin_family = AF_INET;
+            m_address.sin_port   = htons(port);
+#ifdef WIN32
+            // Load Winsock 2.2 DLL.
+            WSADATA wsaData;
+            if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+                std::cerr << "[cluon::TCPConnection] Error while calling WSAStartUp: " << WSAGetLastError() << std::endl;
+            }
+#endif
+
+            m_socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+#ifdef WIN32
+            if (m_socket < 0) {
+                std::cerr << "[cluon::TCPConnection] Error while creating socket: " << WSAGetLastError() << std::endl;
+                WSACleanup();
+            }
+#endif
+
+            if (!(m_socket < 0)) {
+                auto retVal = ::connect(m_socket , reinterpret_cast<struct sockaddr *>(&m_address), sizeof(m_address));
+                if (0 > retVal) {
+#ifdef WIN32
+                    auto errorCode = WSAGetLastError();
+#else
+                    auto errorCode = errno;
+#endif
+                    closeSocket(errorCode);
+                }
+                else {
+                    // Constructing a thread could fail.
+                    try {
+                        m_readFromSocketThread = std::thread(&TCPConnection::readFromSocket, this);
+
+                        // Let the operating system spawn the thread.
+                        using namespace std::literals::chrono_literals;
+                        do { std::this_thread::sleep_for(1ms); } while (!m_readFromSocketThreadRunning.load());
+                    } catch (...) { closeSocket(ECHILD); }
+                }
+            }
+        }
+    }
+}
+
+inline TCPConnection::~TCPConnection() noexcept {
+    m_readFromSocketThreadRunning.store(false);
+
+    // Joining the thread could fail.
+    try {
+        if (m_readFromSocketThread.joinable()) {
+            m_readFromSocketThread.join();
+        }
+    } catch (...) {}
+
+    closeSocket(0);
+}
+
+inline void TCPConnection::closeSocket(int errorCode) noexcept {
+    if (0 != errorCode) {
+        std::cerr << "[cluon::TCPConnection] Failed to perform socket operation: ";
+#ifdef WIN32
+        std::cerr << errorCode << std::endl;
+#else
+        std::cerr << ::strerror(errorCode) << " (" << errorCode << ")" << std::endl;
+#endif
+    }
+
+    if (!(m_socket < 0)) {
+#ifdef WIN32
+        ::shutdown(m_socket, SD_BOTH);
+        ::closesocket(m_socket);
+        WSACleanup();
+#else
+        ::shutdown(m_socket, SHUT_RDWR); // Disallow further read/write operations.
+        ::close(m_socket);
+#endif
+    }
+    m_socket = -1;
+}
+
+inline bool TCPConnection::isRunning() const noexcept {
+    return m_readFromSocketThreadRunning.load();
+}
+
+inline std::pair<ssize_t, int32_t> TCPConnection::send(std::string &&data) const noexcept {
+    if (-1 == m_socket) {
+        return {-1, EBADF};
+    }
+
+    if (data.empty()) {
+        return {0, 0};
+    }
+
+    if (!m_readFromSocketThreadRunning.load()) {
+        m_connectionLostDelegate();
+        return {-1, ENOTCONN};
+    }
+
+    constexpr uint16_t MAX_LENGTH{65535};
+    if (MAX_LENGTH < data.size()) {
+        return {-1, E2BIG};
+    }
+
+    std::lock_guard<std::mutex> lck(m_socketMutex);
+    ssize_t bytesSent = ::send(m_socket, data.c_str(), data.length(), 0);
+    return {bytesSent, (0 > bytesSent ? errno : 0)};
+}
+
+inline void TCPConnection::readFromSocket() noexcept {
+    // Create buffer to store data from socket.
+    constexpr uint16_t MAX_LENGTH{65535};
+    std::array<char, MAX_LENGTH> buffer{};
+
+    // Define timeout for select system call.
+    struct timeval timeout {};
+    timeout.tv_sec  = 0;
+    timeout.tv_usec = 20 * 1000; // Check for new data with 50Hz.
+
+    // Define file descriptor set to watch for read operations.
+    fd_set setOfFiledescriptorsToReadFrom{};
+    ssize_t bytesRead{0};
+
+    // Indicate to main thread that we are ready.
+    m_readFromSocketThreadRunning.store(true);
+
+    while (m_readFromSocketThreadRunning.load()) {
+        FD_ZERO(&setOfFiledescriptorsToReadFrom);
+        FD_SET(m_socket, &setOfFiledescriptorsToReadFrom);
+        ::select(m_socket + 1, &setOfFiledescriptorsToReadFrom, nullptr, nullptr, &timeout);
+        if (FD_ISSET(m_socket, &setOfFiledescriptorsToReadFrom)) {
+            bytesRead = ::recv(m_socket, buffer.data(), buffer.max_size(), 0);
+            if (0 >= bytesRead) {
+                // 0 == bytesRead: peer shut down the connection; 0 > bytesRead: other error.
+                m_readFromSocketThreadRunning.store(false);
+                if (nullptr != m_connectionLostDelegate) {
+                    m_connectionLostDelegate();
+                }
+                break;
+            }
+            if ((0 < bytesRead) && (nullptr != m_newDataDelegate)) {
+#ifdef __linux__
+                std::chrono::system_clock::time_point timestamp;
+                struct timeval receivedTimeStamp {};
+                if (0 == ::ioctl(m_socket, SIOCGSTAMP, &receivedTimeStamp)) {
+                    // Transform struct timeval to C++ chrono.
+                    std::chrono::time_point<std::chrono::system_clock, std::chrono::microseconds> transformedTimePoint(
+                        std::chrono::microseconds(receivedTimeStamp.tv_sec * 1000000L + receivedTimeStamp.tv_usec));
+                    timestamp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(transformedTimePoint);
+                } else {
+                    // In case the ioctl failed, fall back to chrono.
+                    timestamp = std::chrono::system_clock::now();
+                }
+#else
+                std::chrono::system_clock::time_point timestamp = std::chrono::system_clock::now();
+#endif
+                // Call newDataDelegate.
+                m_newDataDelegate(std::string(buffer.data(), static_cast<size_t>(bytesRead)), timestamp);
+            }
+        }
+        else {
+            // Let the operating system yield other threads.
+            using namespace std::literals::chrono_literals;
             std::this_thread::sleep_for(1ms);
         }
     }
@@ -8251,9 +8578,7 @@ inline std::size_t ToProtoVisitor::toVarInt(std::ostream &out, uint64_t v) noexc
 
 namespace cluon {
 
-inline void FromProtoVisitor::readBytesFromStream(std::istream &in,
-                                           std::size_t bytesToReadFromStream,
-                                           std::vector<char> &buffer) noexcept {
+inline void FromProtoVisitor::readBytesFromStream(std::istream &in, std::size_t bytesToReadFromStream, std::vector<char> &buffer) noexcept {
     constexpr std::size_t CHUNK_SIZE{1024};
     std::streamsize bufferPosition{0};
 
@@ -8362,8 +8687,7 @@ inline uint64_t FromProtoVisitor::ProtoKeyValue::valueAsVarInt() const noexcept 
 
 inline float FromProtoVisitor::ProtoKeyValue::valueAsFloat() const noexcept {
     float retVal{0};
-    if (!m_value.empty() && (length() == sizeof(float)) && (m_value.size() == sizeof(float))
-        && (type() == ProtoConstants::FOUR_BYTES)) {
+    if (!m_value.empty() && (length() == sizeof(float)) && (m_value.size() == sizeof(float)) && (type() == ProtoConstants::FOUR_BYTES)) {
         std::memmove(&retVal, &m_value[0], sizeof(float));
     }
     return retVal;
@@ -8371,8 +8695,7 @@ inline float FromProtoVisitor::ProtoKeyValue::valueAsFloat() const noexcept {
 
 inline double FromProtoVisitor::ProtoKeyValue::valueAsDouble() const noexcept {
     double retVal{0};
-    if (!m_value.empty() && (length() == sizeof(double)) && (m_value.size() == sizeof(double))
-        && (type() == ProtoConstants::EIGHT_BYTES)) {
+    if (!m_value.empty() && (length() == sizeof(double)) && (m_value.size() == sizeof(double)) && (type() == ProtoConstants::EIGHT_BYTES)) {
         std::memmove(&retVal, &m_value[0], sizeof(double));
     }
     return retVal;
@@ -8883,8 +9206,7 @@ inline MsgPackConstants FromMsgPackVisitor::getFormatFamily(uint8_t T) noexcept 
         formatFamily = MsgPackConstants::FLOAT_FORMAT;
     } else if (static_cast<uint8_t>(MsgPackConstants::DOUBLE) == T) {
         formatFamily = MsgPackConstants::FLOAT_FORMAT;
-    } else if ((static_cast<uint8_t>(MsgPackConstants::FIXSTR) <= T)
-               && (static_cast<uint8_t>(MsgPackConstants::FIXSTR_END) > T)) {
+    } else if ((static_cast<uint8_t>(MsgPackConstants::FIXSTR) <= T) && (static_cast<uint8_t>(MsgPackConstants::FIXSTR_END) > T)) {
         formatFamily = MsgPackConstants::STR_FORMAT;
     } else if (static_cast<uint8_t>(MsgPackConstants::STR8) == T) {
         formatFamily = MsgPackConstants::STR_FORMAT;
@@ -8892,8 +9214,7 @@ inline MsgPackConstants FromMsgPackVisitor::getFormatFamily(uint8_t T) noexcept 
         formatFamily = MsgPackConstants::STR_FORMAT;
     } else if (static_cast<uint8_t>(MsgPackConstants::STR32) == T) {
         formatFamily = MsgPackConstants::STR_FORMAT;
-    } else if ((static_cast<uint8_t>(MsgPackConstants::FIXMAP) <= T)
-               && (static_cast<uint8_t>(MsgPackConstants::FIXMAP_END) > T)) {
+    } else if ((static_cast<uint8_t>(MsgPackConstants::FIXMAP) <= T) && (static_cast<uint8_t>(MsgPackConstants::FIXMAP_END) > T)) {
         formatFamily = MsgPackConstants::MAP_FORMAT;
     } else if (static_cast<uint8_t>(MsgPackConstants::MAP16) == T) {
         formatFamily = MsgPackConstants::MAP_FORMAT;
@@ -8971,8 +9292,7 @@ inline std::string FromMsgPackVisitor::readString(std::istream &in) noexcept {
         if (MsgPackConstants::STR_FORMAT == getFormatFamily(c)) {
             uint32_t length{0};
             const uint8_t T = static_cast<uint8_t>(c);
-            if ((static_cast<uint8_t>(MsgPackConstants::FIXSTR) <= T)
-                && (static_cast<uint8_t>(MsgPackConstants::FIXSTR_END) > T)) {
+            if ((static_cast<uint8_t>(MsgPackConstants::FIXSTR) <= T) && (static_cast<uint8_t>(MsgPackConstants::FIXSTR_END) > T)) {
                 length = T - static_cast<uint8_t>(MsgPackConstants::FIXSTR);
             } else if (static_cast<uint8_t>(MsgPackConstants::STR8) == T) {
                 uint8_t _length{0};
@@ -9014,8 +9334,7 @@ inline std::map<std::string, FromMsgPackVisitor::MsgPackKeyValue> FromMsgPackVis
             // First, search for map opening token.
             const uint8_t T = static_cast<uint8_t>(c);
             uint32_t tokensToRead{0};
-            if ((static_cast<uint8_t>(MsgPackConstants::FIXMAP) <= T)
-                && (static_cast<uint8_t>(MsgPackConstants::FIXMAP_END) > T)) {
+            if ((static_cast<uint8_t>(MsgPackConstants::FIXMAP) <= T) && (static_cast<uint8_t>(MsgPackConstants::FIXMAP_END) > T)) {
                 tokensToRead = T - static_cast<uint8_t>(MsgPackConstants::FIXMAP);
             } else if (static_cast<uint8_t>(MsgPackConstants::MAP16) == T) {
                 uint16_t tokens{0};
@@ -9289,9 +9608,7 @@ inline void FromMsgPackVisitor::visit(uint32_t id, std::string &&typeName, std::
 
 namespace cluon {
 
-inline void GenericMessage::GenericMessageVisitor::preVisit(uint32_t id,
-                                                     const std::string &shortName,
-                                                     const std::string &longName) noexcept {
+inline void GenericMessage::GenericMessageVisitor::preVisit(uint32_t id, const std::string &shortName, const std::string &longName) noexcept {
     (void)longName;
     m_metaMessage.messageIdentifier(id).messageName(shortName);
     if (!longName.empty()) {
@@ -9304,171 +9621,93 @@ inline void GenericMessage::GenericMessageVisitor::preVisit(uint32_t id,
 
 inline void GenericMessage::GenericMessageVisitor::postVisit() noexcept {}
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  bool &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, bool &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::BOOL_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::BOOL_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  char &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, char &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::CHAR_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::CHAR_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  int8_t &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, int8_t &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::INT8_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::INT8_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  uint8_t &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, uint8_t &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::UINT8_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::UINT8_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  int16_t &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, int16_t &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::INT16_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::INT16_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  uint16_t &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, uint16_t &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::UINT16_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::UINT16_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  int32_t &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, int32_t &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::INT32_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::INT32_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  uint32_t &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, uint32_t &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::UINT32_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::UINT32_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  int64_t &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, int64_t &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::INT64_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::INT64_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  uint64_t &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, uint64_t &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::UINT64_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::UINT64_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  float &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, float &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::FLOAT_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::FLOAT_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  double &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, double &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::DOUBLE_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::DOUBLE_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
 
-inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id,
-                                                  std::string &&typeName,
-                                                  std::string &&name,
-                                                  std::string &v) noexcept {
+inline void GenericMessage::GenericMessageVisitor::visit(uint32_t id, std::string &&typeName, std::string &&name, std::string &v) noexcept {
     cluon::MetaMessage::MetaField mf;
-    mf.fieldIdentifier(id)
-        .fieldDataType(cluon::MetaMessage::MetaField::STRING_T)
-        .fieldDataTypeName(typeName)
-        .fieldName(name);
+    mf.fieldIdentifier(id).fieldDataType(cluon::MetaMessage::MetaField::STRING_T).fieldDataTypeName(typeName).fieldName(name);
     m_intermediateDataRepresentation[mf.fieldIdentifier()] = linb::any{v};
     m_metaMessage.add(std::move(mf));
 }
@@ -9497,8 +9736,7 @@ inline const std::string GenericMessage::ShortName() {
 }
 
 inline const std::string GenericMessage::LongName() {
-    return m_metaMessage.packageName() + (!m_metaMessage.packageName().empty() ? "." : "")
-           + m_metaMessage.messageName();
+    return m_metaMessage.packageName() + (!m_metaMessage.packageName().empty() ? "." : "") + m_metaMessage.messageName();
 }
 
 inline void GenericMessage::preVisit(uint32_t id, const std::string &shortName, const std::string &longName) noexcept {
@@ -9738,8 +9976,7 @@ inline void GenericMessage::createFrom(const MetaMessage &mm, const std::vector<
                 m_intermediateDataRepresentation[f.fieldIdentifier()] = _v;
             } catch (const linb::bad_any_cast &) { // LCOV_EXCL_LINE
             }
-        } else if ((f.fieldDataType() == MetaMessage::MetaField::STRING_T)
-                   || (f.fieldDataType() == MetaMessage::MetaField::BYTES_T)) {
+        } else if ((f.fieldDataType() == MetaMessage::MetaField::STRING_T) || (f.fieldDataType() == MetaMessage::MetaField::BYTES_T)) {
             try {
                 linb::any _v                                          = std::string{};
                 m_intermediateDataRepresentation[f.fieldIdentifier()] = _v;
@@ -9790,8 +10027,7 @@ inline std::string ToJSONVisitor::json() const noexcept {
     const std::string tmp{m_buffer.str()};
     std::string retVal{"{}"};
     if (2 < tmp.size()) {
-        retVal = {(m_withOuterCurlyBraces ? "{" : "") + tmp.substr(0, tmp.size() - 2)
-                  + (m_withOuterCurlyBraces ? "}" : "")};
+        retVal = {(m_withOuterCurlyBraces ? "{" : "") + tmp.substr(0, tmp.size() - 2) + (m_withOuterCurlyBraces ? "}" : "")};
     }
     return retVal;
 }
@@ -10416,7 +10652,7 @@ inline cluon::GenericMessage LCMToGenericMessage::getGenericMessage(const std::s
                     offset += 4;
 
                     const std::string::size_type START_POSITION = offset;
-                    std::string::size_type pos = data.find('\0', START_POSITION); // Extract channel name.
+                    std::string::size_type pos                  = data.find('\0', START_POSITION); // Extract channel name.
                     if (std::string::npos != pos) {
                         const std::string CHANNEL_NAME(data.substr(START_POSITION, (pos - START_POSITION)));
 
@@ -10592,8 +10828,7 @@ inline void ToMsgPackVisitor::visit(uint32_t id, std::string &&typeName, std::st
     (void)typeName;
 
     encode(m_buffer, name);
-    const uint8_t value
-        = (v ? static_cast<uint8_t>(MsgPackConstants::IS_TRUE) : static_cast<uint8_t>(MsgPackConstants::IS_FALSE));
+    const uint8_t value = (v ? static_cast<uint8_t>(MsgPackConstants::IS_TRUE) : static_cast<uint8_t>(MsgPackConstants::IS_FALSE));
     m_buffer.write(reinterpret_cast<const char *>(&value), sizeof(uint8_t));
     m_numberOfFields++;
 }
@@ -10753,9 +10988,7 @@ inline OD4Session::OD4Session(uint16_t CID, std::function<void(cluon::data::Enve
     , m_sender{"225.0.0." + std::to_string(CID), 12175}
     , m_delegate(delegate) {}
 
-inline void OD4Session::callback(std::string &&data,
-                          std::string &&from,
-                          std::chrono::system_clock::time_point &&timepoint) noexcept {
+inline void OD4Session::callback(std::string &&data, std::string &&from, std::chrono::system_clock::time_point &&timepoint) noexcept {
     cluon::data::TimeStamp receivedAt;
     {
         // Transform chrono time representation to same behavior as gettimeofday.
@@ -10784,8 +11017,7 @@ inline void OD4Session::callback(std::string &&data,
                 length >>= 8;
             }
             std::string input;
-            if ((0x0D == static_cast<uint8_t>(byte0)) && (0xA4 == static_cast<uint8_t>(byte1))
-                && (length == protoEncodedEnvelope.size() - OD4_HEADER_SIZE)) {
+            if ((0x0D == static_cast<uint8_t>(byte0)) && (0xA4 == static_cast<uint8_t>(byte1)) && (length == protoEncodedEnvelope.size() - OD4_HEADER_SIZE)) {
                 cluon::data::Envelope env;
                 {
                     std::stringstream sstr{protoEncodedEnvelope.substr(OD4_HEADER_SIZE)};
@@ -10798,9 +11030,13 @@ inline void OD4Session::callback(std::string &&data,
             }
         }
     } else {
-        std::cout << "[cluon::OD4Session] Received " << data.size() << " bytes from " << from << " at "
-                  << receivedAt.seconds() << "." << receivedAt.microseconds() << "." << std::endl;
+        std::cout << "[cluon::OD4Session] Received " << data.size() << " bytes from " << from << " at " << receivedAt.seconds() << "."
+                  << receivedAt.microseconds() << "." << std::endl;
     }
+}
+
+inline void OD4Session::send(cluon::data::Envelope &&envelope) noexcept {
+    sendInternal(cluon::OD4Session::serializeAsOD4Container(std::move(envelope)));
 }
 
 inline std::string OD4Session::serializeAsOD4Container(cluon::data::Envelope &&envelope) noexcept {
@@ -11002,6 +11238,7 @@ inline void ToODVDVisitor::visit(uint32_t id, std::string &&typeName, std::strin
  */
 
 //#include "cluon/EnvelopeToJSON.hpp"
+//#include "cluon/Envelope.hpp"
 //#include "cluon/FromProtoVisitor.hpp"
 //#include "cluon/GenericMessage.hpp"
 //#include "cluon/MessageParser.hpp"
@@ -11031,33 +11268,34 @@ inline int32_t EnvelopeToJSON::setMessageSpecification(const std::string &ms) no
 inline std::string EnvelopeToJSON::getJSONFromProtoEncodedEnvelope(const std::string &protoEncodedEnvelope) noexcept {
     std::string retVal{"{}"};
     if (!m_listOfMetaMessages.empty()) {
+        cluon::data::Envelope envelope;
+        std::stringstream sstr(protoEncodedEnvelope);
         constexpr uint8_t OD4_HEADER_SIZE{5};
-        if (OD4_HEADER_SIZE <= protoEncodedEnvelope.size()) {
-            // First, test for OD4-header that might be optional.
-            char byte0{protoEncodedEnvelope.at(0)};
-            char byte1{protoEncodedEnvelope.at(1)};
-            uint32_t length{0};
-            {
-                std::stringstream sstr{std::string(&protoEncodedEnvelope[1], 4)};
-                sstr.read(reinterpret_cast<char *>(&length), sizeof(uint32_t)); /* Flawfinder: ignore */ // NOLINT
-                length = le32toh(length);
-                length >>= 8;
+        if (OD4_HEADER_SIZE < protoEncodedEnvelope.size()) {
+            // Try decoding complete OD4-encoded Envelope including header.
+            constexpr uint8_t byte0{0x0D};
+            constexpr uint8_t byte1{0xA4};
+            if ((static_cast<uint8_t>(protoEncodedEnvelope.at(0)) == byte0) && (static_cast<uint8_t>(protoEncodedEnvelope.at(1)) == byte1)) {
+                uint32_t length = (*reinterpret_cast<const uint32_t *>(protoEncodedEnvelope.data() + 1));
+                length          = le32toh(length) >> 8;
+                if ((OD4_HEADER_SIZE + length) == protoEncodedEnvelope.size()) {
+                    auto result{extractEnvelope(sstr)};
+                    if (result.first) {
+                        envelope = result.second;
+                    }
+                }
             }
-            std::string input{protoEncodedEnvelope};
-            if ((0x0D == static_cast<uint8_t>(byte0)) && (0xA4 == static_cast<uint8_t>(byte1))
-                && (length == protoEncodedEnvelope.size() - OD4_HEADER_SIZE)) {
-                input = protoEncodedEnvelope.substr(OD4_HEADER_SIZE);
-            }
+        }
 
-            cluon::data::Envelope env;
-
-            std::stringstream sstr{input};
+        if (0 == envelope.dataType()) {
+            // Directly decoding complete OD4 container failed, try decoding
+            // without header.
             cluon::FromProtoVisitor protoDecoder;
             protoDecoder.decodeFrom(sstr);
-            env.accept(protoDecoder);
-
-            retVal = getJSONFromEnvelope(env);
+            envelope.accept(protoDecoder);
         }
+
+        retVal = getJSONFromEnvelope(envelope);
     }
     return retVal;
 }
@@ -11093,8 +11331,7 @@ inline std::string EnvelopeToJSON::getJSONFromEnvelope(cluon::data::Envelope &en
             std::string tmp{payload.messageName()};
             std::replace(tmp.begin(), tmp.end(), '.', '_');
 
-            retVal = '{' + envelopeToJSON.json() + ',' + '\n' + '"' + tmp + '"' + ':' + '{' + payloadToJSON.json() + '}'
-                     + '}';
+            retVal = '{' + envelopeToJSON.json() + ',' + '\n' + '"' + tmp + '"' + ':' + '{' + payloadToJSON.json() + '}' + '}';
         }
     }
     return retVal;
@@ -12531,29 +12768,20 @@ void MetaMessageToCPPTransformator::visit(const MetaMessage &mm) noexcept {
             messageName     = mm.messageName().substr(pos + 1);
         }
 
-        const std::string completePackageName
-            = mm.packageName() + (!mm.packageName().empty() && !namespacePrefix.empty() ? "." : "") + namespacePrefix;
-        const std::string completePackageNameWithColonSeparators{
-            std::regex_replace(completePackageName, std::regex("\\."), "::")}; // NOLINT
-        const std::string namespaceHeader{
-            std::regex_replace(completePackageName, std::regex("\\."), " { namespace ")}; // NOLINT
+        const std::string completePackageName = mm.packageName() + (!mm.packageName().empty() && !namespacePrefix.empty() ? "." : "") + namespacePrefix;
+        const std::string completePackageNameWithColonSeparators{std::regex_replace(completePackageName, std::regex("\\."), "::")}; // NOLINT
+        const std::string namespaceHeader{std::regex_replace(completePackageName, std::regex("\\."), " { namespace ")};             // NOLINT
         const std::string namespaceFooter(
-            static_cast<uint32_t>(std::count(std::begin(namespaceHeader), std::end(namespaceHeader), '{'))
-                + (!namespaceHeader.empty() ? 1 : 0),
-            '}');
+            static_cast<uint32_t>(std::count(std::begin(namespaceHeader), std::end(namespaceHeader), '{')) + (!namespaceHeader.empty() ? 1 : 0), '}');
         std::string headerGuard{std::regex_replace(completePackageName, std::regex("\\."), "_")}; // NOLINT
         headerGuard += (!headerGuard.empty() ? +"_" : "") + messageName;
-        std::transform(std::begin(headerGuard), std::end(headerGuard), std::begin(headerGuard), [](unsigned char c) {
-            return ::toupper(c);
-        });
+        std::transform(std::begin(headerGuard), std::end(headerGuard), std::begin(headerGuard), [](unsigned char c) { return ::toupper(c); });
 
         dataToBeRendered.set("%HEADER_GUARD%", headerGuard);
-        dataToBeRendered.set("%NAMESPACE_OPENING%",
-                             (!namespaceHeader.empty() ? "namespace " + namespaceHeader + " {" : ""));
+        dataToBeRendered.set("%NAMESPACE_OPENING%", (!namespaceHeader.empty() ? "namespace " + namespaceHeader + " {" : ""));
         dataToBeRendered.set("%COMPLETEPACKAGENAME%", completePackageName + (!completePackageName.empty() ? "." : ""));
         dataToBeRendered.set("%COMPLETEPACKAGENAME_WITH_COLON_SEPARATORS%",
-                             completePackageNameWithColonSeparators
-                                 + (!completePackageNameWithColonSeparators.empty() ? "::" : ""));
+                             completePackageNameWithColonSeparators + (!completePackageNameWithColonSeparators.empty() ? "::" : ""));
         dataToBeRendered.set("%MESSAGE%", messageName);
         dataToBeRendered.set("%NAMESPACE_CLOSING%", namespaceFooter);
         dataToBeRendered.set("%IDENTIFIER%", std::to_string(mm.messageIdentifier()));
@@ -12565,24 +12793,20 @@ void MetaMessageToCPPTransformator::visit(const MetaMessage &mm) noexcept {
             if (MetaMessage::MetaField::MESSAGE_T != e.fieldDataType()) {
                 fieldEntry.set("%TYPE%", typeToTypeStringMap[e.fieldDataType()]);
 
-                const std::string defaultInitializatioValue{(e.defaultInitializationValue().empty()
-                                                                 ? typeToDefaultInitizationValueMap[e.fieldDataType()]
-                                                                 : e.defaultInitializationValue())};
+                const std::string defaultInitializatioValue{
+                    (e.defaultInitializationValue().empty() ? typeToDefaultInitizationValueMap[e.fieldDataType()] : e.defaultInitializationValue())};
                 fieldEntry.set("%FIELD_DEFAULT_INITIALIZATION_VALUE%", defaultInitializatioValue);
 
                 std::string initializerSuffix;
                 if (e.fieldDataType() == MetaMessage::MetaField::FLOAT_T) {
                     initializerSuffix = "f"; // suffix for float types.
-                } else if (e.fieldDataType() == MetaMessage::MetaField::STRING_T
-                           || e.fieldDataType() == MetaMessage::MetaField::BYTES_T) {
+                } else if (e.fieldDataType() == MetaMessage::MetaField::STRING_T || e.fieldDataType() == MetaMessage::MetaField::BYTES_T) {
                     initializerSuffix = "s"; // suffix to enforce std::string initialization.
                 }
                 fieldEntry.set("%INITIALIZER_SUFFIX%", initializerSuffix);
             } else {
-                const std::string tmp{mm.packageName() + (!mm.packageName().empty() ? "." : "")
-                                      + e.fieldDataTypeName()};
-                const std::string completeDataTypeNameWithDoubleColons{
-                    std::regex_replace(tmp, std::regex("\\."), "::")}; // NOLINT
+                const std::string tmp{mm.packageName() + (!mm.packageName().empty() ? "." : "") + e.fieldDataTypeName()};
+                const std::string completeDataTypeNameWithDoubleColons{std::regex_replace(tmp, std::regex("\\."), "::")}; // NOLINT
 
                 fieldEntry.set("%TYPE%", completeDataTypeNameWithDoubleColons);
             }
@@ -12691,17 +12915,12 @@ void MetaMessageToProtoTransformator::visit(const MetaMessage &mm) noexcept {
     std::string packageNameWithUnderscores{mm.packageName()};
     std::replace(packageNameWithUnderscores.begin(), packageNameWithUnderscores.end(), '.', '_');
     const std::string completePackageNameWithNamespacePrefix
-        = packageNameWithUnderscores + (!packageNameWithUnderscores.empty() && !namespacePrefix.empty() ? "." : "")
-          + namespacePrefix;
+        = packageNameWithUnderscores + (!packageNameWithUnderscores.empty() && !namespacePrefix.empty() ? "." : "") + namespacePrefix;
 
     std::string completePackageNameWithNamespacePrefixWithUnderscores{completePackageNameWithNamespacePrefix};
-    std::replace(completePackageNameWithNamespacePrefixWithUnderscores.begin(),
-                 completePackageNameWithNamespacePrefixWithUnderscores.end(),
-                 '.',
-                 '_');
+    std::replace(completePackageNameWithNamespacePrefixWithUnderscores.begin(), completePackageNameWithNamespacePrefixWithUnderscores.end(), '.', '_');
     const std::string completeMessageNameWithUnderscores
-        = completePackageNameWithNamespacePrefixWithUnderscores
-          + (!completePackageNameWithNamespacePrefixWithUnderscores.empty() ? +"_" : "") + messageName;
+        = completePackageNameWithNamespacePrefixWithUnderscores + (!completePackageNameWithNamespacePrefixWithUnderscores.empty() ? +"_" : "") + messageName;
 
     dataToBeRendered.set("%MESSAGE_IDENTIFIER%", std::to_string(mm.messageIdentifier()));
     dataToBeRendered.set("%MESSAGE%", completeMessageNameWithUnderscores);
@@ -12836,7 +13055,86 @@ int main(int argc, char **argv) {
             }
         }
     }
+    else {
+        std::cerr << "[" << PROGRAM << "] Could not find '" << inputFilename << "'." << std::endl;
+    }
 
     return retVal;
 }
 #endif
+#ifdef HAVE_CLUON_REPLAY
+/*
+ * Copyright (C) 2018  Christian Berger
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+//#include "cluon/cluon.hpp"
+//#include "cluon/Envelope.hpp"
+//#include "cluon/OD4Session.hpp"
+
+#include <cstdint>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <thread>
+
+int main(int argc, char **argv) {
+    int32_t retCode{0};
+    const std::string PROGRAM{argv[0]}; // NOLINT
+    auto commandlineArguments = cluon::getCommandlineArguments(argc, argv);
+    if (0 == commandlineArguments.count("cid")) {
+        std::cerr << PROGRAM << " replays a .rec file into an OpenDaVINCI session." << std::endl;
+        std::cerr << "Usage:   " << PROGRAM << " --cid=<OpenDaVINCI session> recording.rec" << std::endl;
+        std::cerr << "Example: " << PROGRAM << " --cid=111 file.rec" << std::endl;
+        retCode = 1;
+    }
+    else {
+        // Interface to a running OpenDaVINCI session (ignoring any incoming Envelopes).
+        cluon::OD4Session od4(static_cast<uint16_t>(std::stoi(commandlineArguments["cid"])), [](auto){});
+        if (od4.isRunning()) {
+            std::string recFile;
+            for (auto e : commandlineArguments) {
+                if (recFile.empty() && e.second.empty() && e.first != PROGRAM) {
+                    recFile = e.first;
+                    break;
+                }
+            }
+
+            std::fstream fin(recFile, std::ios::in|std::ios::binary);
+            if (fin.good()) {
+                int32_t oldTimeStampInMicroseconds{0};
+                while (fin.good()) {
+                    auto retVal{cluon::extractEnvelope(fin)};
+                    if (retVal.first) {
+                        if (retVal.second.dataType() > 0) {
+                            const auto SENT{retVal.second.sent()};
+                            const int32_t CURRENT_TIMESTAMP_IN_MICROSECONDS{(SENT.seconds()*1000*1000 + SENT.microseconds())};
+                            const int32_t DELAY = CURRENT_TIMESTAMP_IN_MICROSECONDS - oldTimeStampInMicroseconds;
+                            std::this_thread::sleep_for(std::chrono::duration<int32_t, std::micro>(DELAY > 0 ? DELAY : 0));
+                            od4.send(std::move(retVal.second));
+                            oldTimeStampInMicroseconds = CURRENT_TIMESTAMP_IN_MICROSECONDS;
+                        }
+                    }
+                }
+            }
+            else {
+                std::cerr << "[" << PROGRAM << "] '" << recFile << "' could not be opened." << std::endl;
+            }
+        }
+    }
+    return retCode;
+}
+#endif
+
