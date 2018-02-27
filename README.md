@@ -12,6 +12,7 @@ unit for the OpenDLV software ecosystem.
 * [Usage](#usage)
 * [Build from sources on the example of Ubuntu 16.04 LTS](#build-from-sources-on-the-example-of-ubuntu-1604-lts)
 * [License](#license)
+* [PointCloudReading data structure](#pointcloudreading-data-structure)
 
 
 ## Dependencies
