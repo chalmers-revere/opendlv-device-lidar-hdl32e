@@ -53,3 +53,44 @@ make && make test && make install
 
 * This project is released under the terms of the GNU GPLv3 License
 
+
+## PointCloudReading data structure
+
+`opendlv-device-lidar-hdl32e` receives the data from HDL-32E (Velodyne LiDAR with 32 layers)
+UDP packets as input and tranforms the payload into a more compact [PointCloudReading](https://github.com/chalmers-revere/opendlv.standard-message-set/blob/master/opendlv.odvd#L152-L158)
+representation (CPC), which is a compact form of the original 3D point cloud.
+Further details of this implementation can be found in the paper
+"Hang Yin and Christian Berger, Mastering data complexity for autonomous driving with adaptive point clouds for urban environments, 2017 IEEE Intelligent Vehicles Symposium, 2017 (https://www.researchgate.net/publication/318093493_Mastering_Data_Complexity_for_Autonomous_Driving_with_Adaptive_Point_Clouds_for_Urban_Environments)".
+
+Using CPC, it is possible to encode a complete scan of VPL-16 (Velodyne LiDAR with 16 layers)
+into a single UDP packet, assuming 10Hz rotation rate. In contrast, the number of points fired
+by HDL-32E per scan is more than double the size of VLP-16. Assuming 10Hz rotation rate, HDL-32E
+is able to fire up to 70,000 points, which cannot be all stored in one single UDP packet. Therefore,
+`opendlv-device-lidar-hdl32e` stores the data of a complete scan in three separate `PointCloudReading`
+messages each containing a subset of the 32 layers. The first message contains 12 layers; the second
+message 11 layers, and the third contains 9 layers.
+
+For every 32 points with the same azimuth, they are re-ordered with increasing vertical angle. The top
+layer has a vertical angle of -30.67 degree. The bottom layer has a vertical angle of 10.67 degree. From
+the top layer all the way down to the bottom layer, the vertical angle increment alternates between 1.33
+and 1.34 degree. For instance, the vertical angle of the top layer, Layer 0, is -30.67 degree, while the
+vertical angles of Layer 1 and Layer 2 are -29.33 and -28 degree, respectively.
+
+The layers from different `PointCloudReading` interleave with each other. The first CPC includes Layer 0,
+Layer 1, and every 3rd layer after Layer 1, thereby resulting in 12 layers. The second CPC includes Layer 2,
+Layer 3, and every 3rd layer after Layer 3, resulting in 11 layers. The third CPC includes Layer 5 and
+every 3rd layer after Layer 5, resulting in 9 layers. More specifically,
+
+* The first `PointCloudReading` message includes layers 0, 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31.
+* The second `PointCloudReading` message includes layers 2, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30.
+* The third `PointCloudReading` message includes layers 5, 8, 11, 14, 17, 20, 23, 26, 29.
+
+Since these three CPCs include unique numbers of layers, a receiver can easily distinguish them from the
+number of layers. For instance, a `PointCloudReading` with 16 layers implies a CPC from VLP-16, while a
+`PointCloudReading` message with 11 layers implies the second CPC from a HDL-32E unit.
+
+All three `PointCloudReading` messages that belong together have the same sample timestamp. In this way,
+a receiver will figure out if a new `PointCloudReading` message belongs to the same scan as the previous
+one belongs to a new scan. For 10Hz rotation rate, the delay between every two adjacent scans is roughly
+100ms. If the difference between the sample timestamps of two `PointCloudReading` messages is close to
+100ms, they must come from different scans. 
