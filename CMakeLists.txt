@@ -20,7 +20,7 @@ project(opendlv-device-lidar-hdl32e)
 ################################################################################
 # Defining the relevant versions of OpenDLV Standard Message Set and libcluon.
 set(OPENDLV_STANDARD_MESSAGE_SET opendlv-standard-message-set-v0.9.1.odvd)
-set(CLUON_COMPLETE cluon-complete-v0.0.51.hpp)
+set(CLUON_COMPLETE cluon-complete-v0.0.70.hpp)
 
 ################################################################################
 # This project requires C++14 or newer.
