@@ -52,7 +52,7 @@ class HDL32eDecoder {
 
    private:
     const uint32_t MAX_POINT_SIZE{70000}; // The maximum number of points per frame. 
-    uint8_t m_distanceEncoding{0}; // 0: cm; 1: 2mm. For now, always 0 = cm.
+    uint8_t m_distanceEncoding{1}; // 0: cm; 1: 2mm. For now, always 0 = cm.
 
     std::array<float, 32> m_verticalAngle{};
     std::array<uint8_t, 32> m_sensorOrderIndex{}; // Specify the sensor ID order for each 32 points with increasing vertical angle for PointCloudReading.
