@@ -1892,7 +1892,7 @@ std::vector<opendlv::proxy::PointCloudReading> HDL32eDecoder::decode(const std::
                         m_32SensorsNoIntensity[sensorID] = be16toh(firstByte * 256 + secondByte);
 
                         // TODO: Always in cm encoding for now.
-                        if (m_distanceEncoding == 0) {
+                        if (m_distanceEncoding == 1) {
                             m_32SensorsNoIntensity[sensorID] = static_cast<uint16_t>(m_32SensorsNoIntensity[sensorID]/5.0f); // Store distance with resolution 1cm instead
                         }
 
