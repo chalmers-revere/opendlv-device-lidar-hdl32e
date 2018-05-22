@@ -1742,7 +1742,8 @@ const char *HDL32e_XML = R"(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-HDL32eDecoder::HDL32eDecoder() noexcept {
+HDL32eDecoder::HDL32eDecoder(int32_t intensity) noexcept
+    : m_intensityBitsMSB(intensity) {
     setupCalibration();
     index32sensorIDs();
 }
@@ -1793,7 +1794,7 @@ void HDL32eDecoder::index32sensorIDs() noexcept {
 
     std::array<float, 32> orderedVerticalAngle;
     for (uint8_t i = 0; i < 32; i++) {
-        m_32SensorsNoIntensity[i] = 0;
+        m_32Sensors[i] = 0;
         orderedVerticalAngle[i] = m_verticalAngle[i];
     }
 
@@ -1843,22 +1844,22 @@ std::vector<opendlv::proxy::PointCloudReading> HDL32eDecoder::decode(const std::
                 pointCloudPart1.startAzimuth(m_startAzimuth)
                                .endAzimuth(m_previousAzimuth)
                                .entriesPerAzimuth(12)
-                               .distances(m_distanceStringStreamNoIntensityPart1.str())
-                               .numberOfBitsForIntensity(0);
+                               .distances(m_distanceStringStreamPart1.str())
+                               .numberOfBitsForIntensity(m_intensityBitsMSB);
 
                 opendlv::proxy::PointCloudReading pointCloudPart2;
                 pointCloudPart2.startAzimuth(m_startAzimuth)
                                .endAzimuth(m_previousAzimuth)
                                .entriesPerAzimuth(11)
-                               .distances(m_distanceStringStreamNoIntensityPart2.str())
-                               .numberOfBitsForIntensity(0);
+                               .distances(m_distanceStringStreamPart2.str())
+                               .numberOfBitsForIntensity(m_intensityBitsMSB);
 
                 opendlv::proxy::PointCloudReading pointCloudPart3;
                 pointCloudPart3.startAzimuth(m_startAzimuth)
                                .endAzimuth(m_previousAzimuth)
                                .entriesPerAzimuth(9)
-                               .distances(m_distanceStringStreamNoIntensityPart3.str())
-                               .numberOfBitsForIntensity(0);
+                               .distances(m_distanceStringStreamPart3.str())
+                               .numberOfBitsForIntensity(m_intensityBitsMSB);
 
                 retVal.push_back(pointCloudPart1);
                 retVal.push_back(pointCloudPart2);
@@ -1866,9 +1867,9 @@ std::vector<opendlv::proxy::PointCloudReading> HDL32eDecoder::decode(const std::
 
                 m_pointIndexCPC = 0;
                 m_startAzimuth = m_currentAzimuth;
-                m_distanceStringStreamNoIntensityPart1.str("");
-                m_distanceStringStreamNoIntensityPart2.str("");
-                m_distanceStringStreamNoIntensityPart3.str("");
+                m_distanceStringStreamPart1.str("");
+                m_distanceStringStreamPart2.str("");
+                m_distanceStringStreamPart3.str("");
             }
 
             m_previousAzimuth = m_currentAzimuth;
@@ -1885,31 +1886,39 @@ std::vector<opendlv::proxy::PointCloudReading> HDL32eDecoder::decode(const std::
                     firstByte = (uint8_t)(data.at(position));
                     secondByte = (uint8_t)(data.at(position + 1));
                     thirdByte = (uint8_t)(data.at(position + 2)); // Original intensity value.
-                    (void)thirdByte;
 
                     if (m_pointIndexCPC < MAX_POINT_SIZE) {
                         // Store distance with resolution 0.02m in an array of uint16_t type.
-                        m_32SensorsNoIntensity[sensorID] = be16toh(firstByte * 256 + secondByte);
+                        m_32Sensors[sensorID] = be16toh(firstByte * 256 + secondByte);
 
                         // TODO: Always in cm encoding for now.
-                        if (m_distanceEncoding == 1) {
-                            m_32SensorsNoIntensity[sensorID] = static_cast<uint16_t>(m_32SensorsNoIntensity[sensorID]/5.0f); // Store distance with resolution 1cm instead
+                        if (m_distanceEncoding == 0) {
+                            m_32Sensors[sensorID] = static_cast<uint16_t>(m_32Sensors[sensorID]/5.0f); // Store distance with resolution 1cm instead
+                        }
+
+                        if (m_intensityBitsMSB > 0) {
+                            uint16_t distanceWithIntensity{m_32Sensors[sensorID]};
+                            const uint16_t MASK = 0xFFFF >> m_intensityBitsMSB;
+                            distanceWithIntensity &= MASK;
+                            const uint16_t INTENSITY = thirdByte >> (8 - m_intensityBitsMSB);
+                            distanceWithIntensity += (INTENSITY << (16 - m_intensityBitsMSB) );
+                            m_32Sensors[sensorID] = distanceWithIntensity;
                         }
 
                         if (sensorID == 31) {
                             for (uint8_t index{0}; index < 32; index++) {
-                                m_32SensorsNoIntensity[m_sensorOrderIndex[index]] = htobe16(m_32SensorsNoIntensity[m_sensorOrderIndex[index]]);
+                                m_32Sensors[m_sensorOrderIndex[index]] = htobe16(m_32Sensors[m_sensorOrderIndex[index]]);
                                 if (index == 0 || (index % 3 == 1)) {
                                     // Layer 0, 1, 4, 7..., i.e., in addition to Layer 0, every 3rd layer from Layer 1 and resulting in 12 layers
-                                    m_distanceStringStreamNoIntensityPart1.write(reinterpret_cast<char*>(&m_32SensorsNoIntensity[m_sensorOrderIndex[index]]), 2);
+                                    m_distanceStringStreamPart1.write(reinterpret_cast<char*>(&m_32Sensors[m_sensorOrderIndex[index]]), 2);
                                 }
                                 else if (index == 2 || (index % 3 == 0)) {
                                     // Layer 2, 3, 6, 9..., i.e., in addition to Layer 2, every 3rd layer from Layer 3 and resulting in 11 layers
-                                    m_distanceStringStreamNoIntensityPart2.write(reinterpret_cast<char*>(&m_32SensorsNoIntensity[m_sensorOrderIndex[index]]), 2);
+                                    m_distanceStringStreamPart2.write(reinterpret_cast<char*>(&m_32Sensors[m_sensorOrderIndex[index]]), 2);
                                 }
                                 else {
                                     // Layer 5, 8, 11..., i.e., every 3rd layer from Layer 5 and resulting in 9 layers
-                                    m_distanceStringStreamNoIntensityPart3.write(reinterpret_cast<char*>(&m_32SensorsNoIntensity[m_sensorOrderIndex[index]]), 2);
+                                    m_distanceStringStreamPart3.write(reinterpret_cast<char*>(&m_32Sensors[m_sensorOrderIndex[index]]), 2);
                                 }
                             }
                         }

@@ -35,7 +35,7 @@ class HDL32eDecoder {
     HDL32eDecoder &operator=(HDL32eDecoder &&) = delete;
 
    public:
-    HDL32eDecoder() noexcept;
+    HDL32eDecoder(int32_t intensity) noexcept;
     ~HDL32eDecoder() = default;
 
    public:
@@ -52,20 +52,21 @@ class HDL32eDecoder {
 
    private:
     const uint32_t MAX_POINT_SIZE{70000}; // The maximum number of points per frame. 
-    uint8_t m_distanceEncoding{1}; // 0: cm; 1: 2mm. For now, always 0 = cm.
+    int32_t m_intensityBitsMSB;
+    uint8_t m_distanceEncoding{0}; // 0: cm; 1: 2mm. For now, always 0 = cm.
 
     std::array<float, 32> m_verticalAngle{};
     std::array<uint8_t, 32> m_sensorOrderIndex{}; // Specify the sensor ID order for each 32 points with increasing vertical angle for PointCloudReading.
-    std::array<uint16_t, 32> m_32SensorsNoIntensity{}; // Store the distance values of the current 32 sensors for PointCloudReading without intensities.
+    std::array<uint16_t, 32> m_32Sensors{}; // Store the distance values of the current 32 sensors for PointCloudReading without intensities.
 
     float m_startAzimuth{0.0f};
     float m_currentAzimuth{0.0f};
     float m_previousAzimuth{0.0f};
     uint32_t m_pointIndexCPC{0}; // Current number of points of the current frame for compact point cloud.
 
-    std::stringstream m_distanceStringStreamNoIntensityPart1{}; // Layer 0, 1, 4, 7..., i.e., in addition to Layer 0, every 3rd layer from Layer 1 and resulting in 12 layers, without intensity
-    std::stringstream m_distanceStringStreamNoIntensityPart2{}; // Layer 2, 3, 6, 9..., i.e., in addition to Layer 2, every 3rd layer from Layer 3 and resulting in 11 layers, without intensity
-    std::stringstream m_distanceStringStreamNoIntensityPart3{}; // Layer 5, 8, 11..., i.e., every 3rd layer from Layer 5 and resulting in 9 layers, without intensity
+    std::stringstream m_distanceStringStreamPart1{}; // Layer 0, 1, 4, 7..., i.e., in addition to Layer 0, every 3rd layer from Layer 1 and resulting in 12 layers, without intensity
+    std::stringstream m_distanceStringStreamPart2{}; // Layer 2, 3, 6, 9..., i.e., in addition to Layer 2, every 3rd layer from Layer 3 and resulting in 11 layers, without intensity
+    std::stringstream m_distanceStringStreamPart3{}; // Layer 5, 8, 11..., i.e., every 3rd layer from Layer 5 and resulting in 9 layers, without intensity
 };
 
 #endif
