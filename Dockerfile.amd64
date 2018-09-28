@@ -36,5 +36,5 @@ MAINTAINER Christian Berger "christian.berger@gu.se"
 
 WORKDIR /usr/bin
 COPY --from=builder /tmp/opendlv-device-lidar-hdl32e-dest/bin/opendlv-device-lidar-hdl32e .
-CMD ["/usr/bin/opendlv-device-lidar-hdl32e"]
+ENTRYPOINT ["/usr/bin/opendlv-device-lidar-hdl32e"]
 

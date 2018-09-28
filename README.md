@@ -36,7 +36,7 @@ the messages according to OpenDLV Standard Message Set into session 111 in
 Google Protobuf format, simply start it as follows:
 
 ```
-docker run --init --rm --net=host chalmersrevere/opendlv-device-lidar-hdl32e-multi:v0.0.9 opendlv-device-lidar-hdl32e --hdl32e_ip=0.0.0.0 --hdl32e_port=2368 --cid=111 --verbose
+docker run --init --rm --net=host chalmersrevere/opendlv-device-lidar-hdl32e-multi:v0.0.10 --hdl32e_ip=0.0.0.0 --hdl32e_port=2368 --cid=111 --verbose
 ```
 
 ## Build from sources on the example of Ubuntu 16.04 LTS
