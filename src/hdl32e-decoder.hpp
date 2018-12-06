@@ -20,11 +20,13 @@
 #ifndef HDL32E_DECODER
 #define HDL32E_DECODER
 
+#include "cluon-complete.hpp"
 #include "opendlv-standard-message-set.hpp"
 
 #include <cstdint>
 #include <array>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 class HDL32eDecoder {
@@ -44,7 +46,7 @@ class HDL32eDecoder {
      *
      * @return PointCloud messages.
      */
-    std::vector<opendlv::proxy::PointCloudReading> decode(const std::string &data) noexcept;
+    std::pair<std::vector<opendlv::proxy::PointCloudReading>, cluon::data::TimeStamp> decode(const std::string &data) noexcept;
 
    private:
     void setupCalibration() noexcept;
