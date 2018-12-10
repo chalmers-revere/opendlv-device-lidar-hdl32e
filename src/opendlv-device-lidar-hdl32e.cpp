@@ -56,7 +56,7 @@ int32_t main(int32_t argc, char **argv) {
         HDL32eDecoder hdl32eDecoder(INTENSITY);
 
         cluon::UDPReceiver fromDevice(HDL32E_ADDRESS, HDL32E_PORT,
-            [&od4Session = od4, &decoder = hdl32eDecoder, senderStamp = ID, VERBOSE, DONT_USE_GPSTIME](std::string &&d, std::string &&/*from*/, std::chrono::system_clock::time_point &&tp) noexcept {
+            [&od4Session = od4, &decoder = hdl32eDecoder, senderStamp = ID, VERBOSE, USE_GPSTIME](std::string &&d, std::string &&/*from*/, std::chrono::system_clock::time_point &&tp) noexcept {
             auto retVal = decoder.decode(d);
             if (!retVal.first.empty()) {
                 cluon::data::TimeStamp sampleTime{(!USE_GPSTIME) ? cluon::time::convert(tp) : retVal.second};
