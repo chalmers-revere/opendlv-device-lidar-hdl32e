@@ -46,9 +46,7 @@ int32_t main(int32_t argc, char **argv) {
         const bool USE_GPSTIME{commandlineArguments.count("gpstime") != 0};
 
         // Interface to a running OpenDaVINCI session (ignoring any incoming Envelopes).
-        cluon::OD4Session od4{static_cast<uint16_t>(std::stoi(commandlineArguments["cid"])),
-            [](auto){}
-        };
+        cluon::OD4Session od4{static_cast<uint16_t>(std::stoi(commandlineArguments["cid"]))};
 
         // Interface to VelodyneLidar HDL32e unit.
         const std::string HDL32E_ADDRESS((commandlineArguments.count("hdl32e_ip") == 0) ? "0.0.0.0" : commandlineArguments["hdl32e_ip"]);

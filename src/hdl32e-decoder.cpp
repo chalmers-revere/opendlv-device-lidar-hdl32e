@@ -1870,8 +1870,11 @@ std::pair<std::vector<opendlv::proxy::PointCloudReading>, cluon::data::TimeStamp
                 m_pointIndexCPC = 0;
                 m_startAzimuth = m_currentAzimuth;
                 m_distanceStringStreamPart1.str("");
+                m_distanceStringStreamPart1.clear();
                 m_distanceStringStreamPart2.str("");
+                m_distanceStringStreamPart2.clear();
                 m_distanceStringStreamPart3.str("");
+                m_distanceStringStreamPart3.clear();
             }
 
             m_previousAzimuth = m_currentAzimuth;
